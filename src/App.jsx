@@ -1,10 +1,22 @@
-import "./App.css";
+import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import MainLayout from './components/layout/MainLayout';
+import Home from './pages/Home';
+import DemoPage from './pages/DemoPage';
+import Chatbot from './components/chat/Chatbot';
 
 function App() {
   return (
-    <>
-      <h1 class="text-3xl font-bold underline">Hello world!</h1>{" "}
-    </>
+    <BrowserRouter>
+      <MainLayout>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/demo" element={<DemoPage />} />
+          <Route path="/marketplace" element={<DemoPage />} />
+        </Routes>
+        <Chatbot />
+      </MainLayout>
+    </BrowserRouter>
   );
 }
 
