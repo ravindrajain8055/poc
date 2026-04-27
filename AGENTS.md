@@ -2,20 +2,9 @@
 
 > My organization is ELI LILLY, we need to create a website where all the resources used in any project are stored in a database or linked are attached to the pages inside this website, especailly having an LLM chatbot to help users find resources.
 
----
-
-## 📋 Table of Contents
-
-- For now we are just making the dashboard using the image Ill share in the message later.
-- Most important we need a chatbot popup which comes at the start of the website, please take inspiration from Chatbase.co, a basic chatbot.
-- The chatbot will look for answers in the uploaded resourcedocuments for now
-- Add commented code for chatbot to call a backend API for resouce search.
-
 ## Theme
 
 > white and #d52b1e colour combination.
-
-# Coding Standards
 
 ## React
 
@@ -28,7 +17,8 @@
 
 **CRITICAL**: We are using Tailwind CSS v4, which uses CSS-based configuration.
 
-- **DO NOT** create `tailwind.config.ts` or `tailwind.config.js` files (those are for v3)
+<!-- - **DO NOT** create `tailwind.config.ts` or `tailwind.config.js` files (those are for v3) -->
+
 - All theme configuration must be done in CSS using the `@theme` directive in `src/app/globals.css`
 - Use CSS custom properties for colors, spacing, etc.
 - No JavaScript-based config allowed
