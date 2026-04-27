@@ -131,6 +131,25 @@ const Sidebar = () => {
               expandedSections.myWork ? <ChevronDown size={16} /> : <ChevronRight size={16} />
             )}
           </button>
+          <AnimatePresence>
+            {isExpanded && expandedSections.myWork && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="pl-9 pr-2 overflow-hidden"
+              >
+                <div className="py-1 flex flex-col gap-1">
+                  <NavLink 
+                    to="/my-ingestion" 
+                    className={({ isActive }) => `block text-sm py-1.5 ${isActive ? 'text-[#d52b1e] font-medium' : 'text-gray-600 hover:text-gray-900'}`}
+                  >
+                    My ingestion status
+                  </NavLink>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Marketplace */}
