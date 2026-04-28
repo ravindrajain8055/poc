@@ -16,7 +16,6 @@ const STAGES = [
   { id: "development", label: "Development", icon: Code },
   { id: "testing", label: "Testing", icon: Activity },
   { id: "deploy", label: "Deploy", icon: Send },
-  { id: "glue_job", label: "Glue Job", icon: Database },
 ];
 
 const ProgressTracker = ({ currentStageId }) => {
@@ -74,7 +73,7 @@ const MyIngestionStatus = () => {
   useEffect(() => {
     // Read from localStorage or use fallback if empty
     const stored = JSON.parse(localStorage.getItem("ingestions") || "[]");
-    
+
     if (stored.length === 0) {
       // Provide some default dummy data to show if localStorage is empty
       const dummyData = [
@@ -86,17 +85,18 @@ const MyIngestionStatus = () => {
           sourceLink: "https://internal.lilly.com/data/sales-q3",
           currentStage: "approval",
           date: "2026-04-26",
-          publishToMarketplace: "Yes"
+          publishToMarketplace: "Yes",
         },
         {
           id: "ING-002",
           dataName: "Patient Demographics",
-          dataDescription: "Anonymized patient demographic data for recent trials.",
+          dataDescription:
+            "Anonymized patient demographic data for recent trials.",
           dataFormat: "Parquet",
           sourceLink: "s3://lilly-clinical-data/demographics/",
           currentStage: "deploy",
           date: "2026-04-20",
-          publishToMarketplace: "No"
+          publishToMarketplace: "No",
         },
       ];
       setIngestions(dummyData);
@@ -118,7 +118,7 @@ const MyIngestionStatus = () => {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              My Ingestion Status
+              My Data Ingestion Status
             </h1>
             <p className="text-gray-500 text-sm">
               Track the status of your data assets
@@ -186,10 +186,12 @@ const MyIngestionStatus = () => {
                         </a>
                       </td>
                       <td className="p-4 pb-8">
-                        <ProgressTracker currentStageId={item.currentStage || "approval"} />
+                        <ProgressTracker
+                          currentStageId={item.currentStage || "approval"}
+                        />
                       </td>
                     </tr>
-                    
+
                     {/* Expandable Accordion Row */}
                     {expandedRows[item.id] && (
                       <tr className="bg-gray-50/80 border-t border-gray-100">
@@ -203,79 +205,116 @@ const MyIngestionStatus = () => {
                               </h4>
                               <div className="space-y-2 text-gray-600">
                                 <p className="flex justify-between border-b border-gray-50 pb-1">
-                                  <span className="font-medium">App Name:</span> 
+                                  <span className="font-medium">App Name:</span>
                                   <span>{item.appName || "N/A"}</span>
                                 </p>
                                 <p className="flex justify-between border-b border-gray-50 pb-1">
-                                  <span className="font-medium">App CI:</span> 
+                                  <span className="font-medium">App CI:</span>
                                   <span>{item.applicationCi || "N/A"}</span>
                                 </p>
                                 <p className="flex justify-between border-b border-gray-50 pb-1">
-                                  <span className="font-medium">Git Repo:</span> 
-                                  <span className="truncate max-w-[120px]" title={item.sourceGitRepo}>{item.sourceGitRepo || "N/A"}</span>
+                                  <span className="font-medium">Git Repo:</span>
+                                  <span
+                                    className="truncate max-w-[120px]"
+                                    title={item.sourceGitRepo}
+                                  >
+                                    {item.sourceGitRepo || "N/A"}
+                                  </span>
                                 </p>
                                 <p className="flex justify-between border-b border-gray-50 pb-1">
-                                  <span className="font-medium">Data Class:</span> 
-                                  <span>{item.dataClassification || "N/A"}</span>
+                                  <span className="font-medium">
+                                    Data Class:
+                                  </span>
+                                  <span>
+                                    {item.dataClassification || "N/A"}
+                                  </span>
                                 </p>
                                 <p className="flex justify-between">
-                                  <span className="font-medium">HIPAA:</span> 
+                                  <span className="font-medium">HIPAA:</span>
                                   <span>{item.hipaa || "N/A"}</span>
                                 </p>
                               </div>
                             </div>
-                            
+
                             {/* Ownership */}
                             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
                               <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
-                                <Activity size={16} className="text-[#d52b1e]" />
+                                <Activity
+                                  size={16}
+                                  className="text-[#d52b1e]"
+                                />
                                 Ownership
                               </h4>
                               <div className="space-y-2 text-gray-600">
                                 <p className="flex justify-between border-b border-gray-50 pb-1">
-                                  <span className="font-medium">System Owner:</span> 
+                                  <span className="font-medium">
+                                    System Owner:
+                                  </span>
                                   <span>{item.systemOwner || "N/A"}</span>
                                 </p>
                                 <p className="flex justify-between border-b border-gray-50 pb-1">
-                                  <span className="font-medium">Custodian:</span> 
+                                  <span className="font-medium">
+                                    Custodian:
+                                  </span>
                                   <span>{item.systemCustodian || "N/A"}</span>
                                 </p>
                                 <p className="flex justify-between border-b border-gray-50 pb-1">
-                                  <span className="font-medium">IT Contact:</span> 
+                                  <span className="font-medium">
+                                    IT Contact:
+                                  </span>
                                   <span>{item.primaryItContact || "N/A"}</span>
                                 </p>
                                 <p className="flex justify-between">
-                                  <span className="font-medium">Approver Grp:</span> 
+                                  <span className="font-medium">
+                                    Approver Grp:
+                                  </span>
                                   <span>{item.approverGroup || "N/A"}</span>
                                 </p>
                               </div>
                             </div>
-                            
+
                             {/* Business */}
                             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
                               <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
-                                <LayoutTemplate size={16} className="text-[#d52b1e]" />
+                                <LayoutTemplate
+                                  size={16}
+                                  className="text-[#d52b1e]"
+                                />
                                 Business
                               </h4>
                               <div className="space-y-2 text-gray-600">
                                 <p className="flex justify-between border-b border-gray-50 pb-1">
-                                  <span className="font-medium">L1 Business:</span> 
-                                  <span>{item.level1BusinessArea || "N/A"}</span>
+                                  <span className="font-medium">
+                                    L1 Business:
+                                  </span>
+                                  <span>
+                                    {item.level1BusinessArea || "N/A"}
+                                  </span>
                                 </p>
                                 <p className="flex justify-between border-b border-gray-50 pb-1">
-                                  <span className="font-medium">Cost Center:</span> 
+                                  <span className="font-medium">
+                                    Cost Center:
+                                  </span>
                                   <span>{item.costCenter || "N/A"}</span>
                                 </p>
                                 <p className="flex justify-between border-b border-gray-50 pb-1">
-                                  <span className="font-medium">CC Approver:</span> 
-                                  <span>{item.costCenterApprover || "N/A"}</span>
+                                  <span className="font-medium">
+                                    CC Approver:
+                                  </span>
+                                  <span>
+                                    {item.costCenterApprover || "N/A"}
+                                  </span>
                                 </p>
                                 <p className="flex justify-between border-b border-gray-50 pb-1">
-                                  <span className="font-medium">Proj Center:</span> 
+                                  <span className="font-medium">
+                                    Proj Center:
+                                  </span>
                                   <span>{item.projectCenter || "N/A"}</span>
                                 </p>
                                 <div className="mt-3 pt-3 flex justify-between items-center">
-                                  <span className="font-medium text-gray-900">Publish to Marketplace:</span> 
+                                  <span className="font-medium text-gray-900">
+                                    Publish to Marketplace:
+                                  </span>
                                   <span
                                     className={`px-2.5 py-1 rounded-md text-xs font-bold ${
                                       item.publishToMarketplace === "Yes"

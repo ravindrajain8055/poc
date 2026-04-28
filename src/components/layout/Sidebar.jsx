@@ -176,7 +176,7 @@ const Sidebar = () => {
                       `block text-sm py-1.5 ${isActive ? "text-[#d52b1e] font-medium" : "text-gray-600 hover:text-gray-900"}`
                     }
                   >
-                    My ingestion status
+                    My Data ingestion status
                   </NavLink>
                 </div>
               </motion.div>

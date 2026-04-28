@@ -1,15 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Search,
-  X,
-  Filter,
-  Box,
-  Database,
-  Bot,
-  ChevronRight,
-} from "lucide-react";
+import { Search, X, Box, Database, Bot, ChevronRight } from "lucide-react";
 
 const DUMMY_RESULTS = [
   {
@@ -131,9 +123,6 @@ const Home = () => {
                 <Search size={24} />
               </button>
             </div>
-            <button className="bg-[#e8e8e8] text-gray-800 px-6 py-4 rounded-md font-semibold flex items-center gap-2 hover:bg-gray-200 transition-colors shadow-lg">
-              Filter by <Filter size={20} />
-            </button>
           </div>
         </div>
       </div>
