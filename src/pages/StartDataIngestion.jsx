@@ -227,7 +227,7 @@ const StartDataIngestion = () => {
               {index < steps.length - 1 && (
                 <div
                   className={`w-16 sm:w-24 h-0.5 mx-2 transition-colors ${
-                    isCompleted ? "bg-green-500" : "bg-gray-200"
+                    isCompleted ? "bg-green-500 text-green-500" : "bg-gray-200"
                   }`}
                 />
               )}
@@ -281,7 +281,7 @@ const StartDataIngestion = () => {
           </div>
         </div>
 
-        <div className="p-8 pb-4">{renderStepper()}</div>
+        <div className="px-8 pb-4">{renderStepper()}</div>
 
         {/* STAGE 1 */}
         {currentStage === 1 && (
@@ -450,19 +450,63 @@ const StartDataIngestion = () => {
                 Technical & Ownership Details
               </h3>
               <div className="space-y-1">
-                {renderStage2Field("App Name", "appName", "e.g. aads-edb-core-webapp")}
+                {renderStage2Field(
+                  "App Name",
+                  "appName",
+                  "e.g. aads-edb-core-webapp",
+                )}
                 {renderStage2Field("Cost Center", "costCenter", "e.g. 12345")}
-                {renderStage2Field("Cost Center Approver", "costCenterApprover", "e.g. John Doe")}
-                {renderStage2Field("System Owner", "systemOwner", "e.g. Jane Smith")}
-                {renderStage2Field("System Custodian", "systemCustodian", "e.g. IT Dept")}
-                {renderStage2Field("Primary IT Contact", "primaryItContact", "e.g. IT Support")}
-                {renderStage2Field("Level 1 Business Area", "level1BusinessArea", "e.g. AADS")}
-                {renderStage2Field("Project Center", "projectCenter", "e.g. 67890")}
-                {renderStage2Field("Data Classification", "dataClassification", "e.g. Yellow/Green")}
+                {renderStage2Field(
+                  "Cost Center Approver",
+                  "costCenterApprover",
+                  "e.g. John Doe",
+                )}
+                {renderStage2Field(
+                  "System Owner",
+                  "systemOwner",
+                  "e.g. Jane Smith",
+                )}
+                {renderStage2Field(
+                  "System Custodian",
+                  "systemCustodian",
+                  "e.g. IT Dept",
+                )}
+                {renderStage2Field(
+                  "Primary IT Contact",
+                  "primaryItContact",
+                  "e.g. IT Support",
+                )}
+                {renderStage2Field(
+                  "Level 1 Business Area",
+                  "level1BusinessArea",
+                  "e.g. AADS",
+                )}
+                {renderStage2Field(
+                  "Project Center",
+                  "projectCenter",
+                  "e.g. 67890",
+                )}
+                {renderStage2Field(
+                  "Data Classification",
+                  "dataClassification",
+                  "e.g. Yellow/Green",
+                )}
                 {renderStage2Field("HIPAA", "hipaa", "Yes/No")}
-                {renderStage2Field("Source Git Repo", "sourceGitRepo", "https://github.com/... ")}
-                {renderStage2Field("Approver Group", "approverGroup", "e.g. Data Stewards")}
-                {renderStage2Field("Application CI", "applicationCi", "e.g. CI-123")}
+                {renderStage2Field(
+                  "Source Git Repo",
+                  "sourceGitRepo",
+                  "https://github.com/... ",
+                )}
+                {renderStage2Field(
+                  "Approver Group",
+                  "approverGroup",
+                  "e.g. Data Stewards",
+                )}
+                {renderStage2Field(
+                  "Application CI",
+                  "applicationCi",
+                  "e.g. CI-123",
+                )}
               </div>
             </div>
 
@@ -500,7 +544,7 @@ const StartDataIngestion = () => {
               <h3 className="text-xl font-medium text-gray-900 mb-6">
                 Do you want to publish this data in marketplace?
               </h3>
-              
+
               <div className="flex justify-center gap-6">
                 <label className="flex items-center gap-2 cursor-pointer p-4 border border-gray-200 rounded-lg hover:border-[#d52b1e] hover:bg-red-50 transition-colors w-32 justify-center">
                   <input
@@ -508,7 +552,9 @@ const StartDataIngestion = () => {
                     name="publish"
                     value="Yes"
                     checked={formData.publishToMarketplace === "Yes"}
-                    onChange={(e) => handleInputChange("publishToMarketplace", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("publishToMarketplace", e.target.value)
+                    }
                     className="w-4 h-4 text-[#d52b1e] focus:ring-[#d52b1e]"
                   />
                   <span className="text-gray-900 font-medium">Yes</span>
@@ -519,7 +565,9 @@ const StartDataIngestion = () => {
                     name="publish"
                     value="No"
                     checked={formData.publishToMarketplace === "No"}
-                    onChange={(e) => handleInputChange("publishToMarketplace", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("publishToMarketplace", e.target.value)
+                    }
                     className="w-4 h-4 text-[#d52b1e] focus:ring-[#d52b1e]"
                   />
                   <span className="text-gray-900 font-medium">No</span>
