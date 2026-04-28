@@ -53,18 +53,6 @@ const Sidebar = () => {
         >
           Lilly
         </div>
-        <AnimatePresence>
-          {isExpanded && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="text-gray-800 font-semibold whitespace-nowrap"
-            >
-              data.lilly.com
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
 
       {/* User Profile */}
