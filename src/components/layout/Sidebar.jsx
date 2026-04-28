@@ -10,6 +10,7 @@ import {
   PanelLeftOpen,
   FileText,
   ExternalLink,
+  Ticket,
 } from "lucide-react";
 
 const Sidebar = () => {
@@ -17,6 +18,7 @@ const Sidebar = () => {
   const [expandedSections, setExpandedSections] = useState({
     getStarted: false,
     myWork: false,
+    marketplace: false,
   });
 
   const toggleSection = (section) => {
@@ -184,14 +186,56 @@ const Sidebar = () => {
           </AnimatePresence>
         </div>
 
-        {/* Marketplace */}
-        <NavLink
-          to="/marketplace"
-          className="flex items-center gap-3 px-2 py-2 rounded-md hover:bg-gray-200 text-gray-700"
-        >
-          <Store size={18} className="flex-shrink-0 text-gray-500" />
-          {isExpanded && <span>Marketplace</span>}
-        </NavLink>
+        {/* Marketplace Accordion */}
+        <div>
+          <button
+            onClick={() => toggleSection("marketplace")}
+            className="w-full flex items-center justify-between px-2 py-2 rounded-md hover:bg-gray-200 text-gray-700"
+          >
+            <div className="flex items-center gap-3">
+              <Store size={18} className="flex-shrink-0 text-gray-500" />
+              {isExpanded && <span>Marketplace</span>}
+            </div>
+            {isExpanded &&
+              (expandedSections.marketplace ? (
+                <ChevronDown size={16} />
+              ) : (
+                <ChevronRight size={16} />
+              ))}
+          </button>
+          <AnimatePresence>
+            {isExpanded && expandedSections.marketplace && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="pl-9 pr-2 overflow-hidden"
+              >
+                <div className="py-1 flex flex-col gap-1">
+                  <NavLink
+                    to="/marketplace"
+                    className={({ isActive }) =>
+                      `block text-sm py-1.5 ${isActive && window.location.pathname === "/marketplace" ? "text-[#d52b1e] font-medium" : "text-gray-600 hover:text-gray-900"}`
+                    }
+                  >
+                    Overview
+                  </NavLink>
+                </div>
+                <div className="py-1 flex flex-col gap-1">
+                  <NavLink
+                    to="/tickets"
+                    className={({ isActive }) =>
+                      `flex items-center gap-2 text-sm py-1.5 ${isActive ? "text-[#d52b1e] font-medium" : "text-gray-600 hover:text-gray-900"}`
+                    }
+                  >
+                    <Ticket size={16} />
+                    Tickets
+                  </NavLink>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
         {/* Custom POC Links */}
         <div className="pt-4 mt-4 border-t border-gray-200">
