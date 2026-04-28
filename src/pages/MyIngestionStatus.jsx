@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   Activity,
   CheckCircle2,
@@ -6,6 +6,9 @@ import {
   Code,
   Send,
   LayoutTemplate,
+  Database,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 const STAGES = [
@@ -13,34 +16,14 @@ const STAGES = [
   { id: "development", label: "Development", icon: Code },
   { id: "testing", label: "Testing", icon: Activity },
   { id: "deploy", label: "Deploy", icon: Send },
-];
-
-const DUMMY_INGESTIONS = [
-  {
-    id: "ING-001",
-    name: "Sales Q3 Report",
-    description: "Quarterly sales figures and analysis for Q3 2025.",
-    format: "Excel",
-    source: "https://internal.lilly.com/data/sales-q3",
-    currentStage: "approval",
-    date: "2026-04-26",
-  },
-  {
-    id: "ING-002",
-    name: "Patient Demographics",
-    description: "Anonymized patient demographic data for recent trials.",
-    format: "Parquet",
-    source: "s3://lilly-clinical-data/demographics/",
-    currentStage: "deploy",
-    date: "2026-04-20",
-  },
+  { id: "glue_job", label: "Glue Job", icon: Database },
 ];
 
 const ProgressTracker = ({ currentStageId }) => {
   const currentIndex = STAGES.findIndex((s) => s.id === currentStageId);
 
   return (
-    <div className="flex items-center w-full max-w-sm">
+    <div className="flex items-center w-full max-w-sm mt-4">
       {STAGES.map((stage, index) => {
         const isCompleted = index < currentIndex;
         const isCurrent = index === currentIndex;
@@ -85,6 +68,47 @@ const ProgressTracker = ({ currentStageId }) => {
 };
 
 const MyIngestionStatus = () => {
+  const [ingestions, setIngestions] = useState([]);
+  const [expandedRows, setExpandedRows] = useState({});
+
+  useEffect(() => {
+    // Read from localStorage or use fallback if empty
+    const stored = JSON.parse(localStorage.getItem("ingestions") || "[]");
+    
+    if (stored.length === 0) {
+      // Provide some default dummy data to show if localStorage is empty
+      const dummyData = [
+        {
+          id: "ING-001",
+          dataName: "Sales Q3 Report",
+          dataDescription: "Quarterly sales figures and analysis for Q3 2025.",
+          dataFormat: "Excel",
+          sourceLink: "https://internal.lilly.com/data/sales-q3",
+          currentStage: "approval",
+          date: "2026-04-26",
+          publishToMarketplace: "Yes"
+        },
+        {
+          id: "ING-002",
+          dataName: "Patient Demographics",
+          dataDescription: "Anonymized patient demographic data for recent trials.",
+          dataFormat: "Parquet",
+          sourceLink: "s3://lilly-clinical-data/demographics/",
+          currentStage: "deploy",
+          date: "2026-04-20",
+          publishToMarketplace: "No"
+        },
+      ];
+      setIngestions(dummyData);
+    } else {
+      setIngestions(stored);
+    }
+  }, []);
+
+  const toggleRow = (id) => {
+    setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
   return (
     <div className="min-h-full bg-gray-50 flex flex-col py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto w-full">
@@ -114,49 +138,166 @@ const MyIngestionStatus = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {DUMMY_INGESTIONS.map((item) => (
-                  <tr
-                    key={item.id}
-                    className="hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="p-4 pl-6">
-                      <div className="font-medium text-gray-900">
-                        {item.name}
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        {item.id} • {item.date}
-                      </div>
-                      <div
-                        className="text-xs text-gray-400 mt-1 truncate max-w-[200px]"
-                        title={item.description}
-                      >
-                        {item.description}
-                      </div>
-                    </td>
-                    <td className="p-4 hidden md:table-cell">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                        {item.format}
-                      </span>
-                    </td>
-                    <td className="p-4 hidden lg:table-cell">
-                      <a
-                        href={item.source}
-                        className="text-sm text-blue-600 hover:underline truncate max-w-[150px] inline-block"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {item.source}
-                      </a>
-                    </td>
-                    <td className="p-4 pb-8">
-                      <ProgressTracker currentStageId={item.currentStage} />
-                    </td>
-                  </tr>
+                {ingestions.map((item) => (
+                  <React.Fragment key={item.id}>
+                    <tr
+                      className="hover:bg-gray-50 transition-colors cursor-pointer group"
+                      onClick={() => toggleRow(item.id)}
+                    >
+                      <td className="p-4 pl-6">
+                        <div className="flex items-start gap-3">
+                          <div className="mt-1 text-gray-400 group-hover:text-[#d52b1e] transition-colors">
+                            {expandedRows[item.id] ? (
+                              <ChevronUp size={18} />
+                            ) : (
+                              <ChevronDown size={18} />
+                            )}
+                          </div>
+                          <div>
+                            <div className="font-medium text-gray-900">
+                              {item.dataName}
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              {item.id} • {item.date}
+                            </div>
+                            <div
+                              className="text-xs text-gray-400 mt-1 truncate max-w-[200px]"
+                              title={item.dataDescription}
+                            >
+                              {item.dataDescription}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-4 hidden md:table-cell">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                          {item.dataFormat}
+                        </span>
+                      </td>
+                      <td className="p-4 hidden lg:table-cell">
+                        <a
+                          href={item.sourceLink}
+                          className="text-sm text-blue-600 hover:underline truncate max-w-[150px] inline-block"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {item.sourceLink}
+                        </a>
+                      </td>
+                      <td className="p-4 pb-8">
+                        <ProgressTracker currentStageId={item.currentStage || "approval"} />
+                      </td>
+                    </tr>
+                    
+                    {/* Expandable Accordion Row */}
+                    {expandedRows[item.id] && (
+                      <tr className="bg-gray-50/80 border-t border-gray-100">
+                        <td colSpan={4} className="p-6">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 text-sm pl-8">
+                            {/* Technical Details */}
+                            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+                              <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                                <Code size={16} className="text-[#d52b1e]" />
+                                Technical Details
+                              </h4>
+                              <div className="space-y-2 text-gray-600">
+                                <p className="flex justify-between border-b border-gray-50 pb-1">
+                                  <span className="font-medium">App Name:</span> 
+                                  <span>{item.appName || "N/A"}</span>
+                                </p>
+                                <p className="flex justify-between border-b border-gray-50 pb-1">
+                                  <span className="font-medium">App CI:</span> 
+                                  <span>{item.applicationCi || "N/A"}</span>
+                                </p>
+                                <p className="flex justify-between border-b border-gray-50 pb-1">
+                                  <span className="font-medium">Git Repo:</span> 
+                                  <span className="truncate max-w-[120px]" title={item.sourceGitRepo}>{item.sourceGitRepo || "N/A"}</span>
+                                </p>
+                                <p className="flex justify-between border-b border-gray-50 pb-1">
+                                  <span className="font-medium">Data Class:</span> 
+                                  <span>{item.dataClassification || "N/A"}</span>
+                                </p>
+                                <p className="flex justify-between">
+                                  <span className="font-medium">HIPAA:</span> 
+                                  <span>{item.hipaa || "N/A"}</span>
+                                </p>
+                              </div>
+                            </div>
+                            
+                            {/* Ownership */}
+                            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+                              <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                                <Activity size={16} className="text-[#d52b1e]" />
+                                Ownership
+                              </h4>
+                              <div className="space-y-2 text-gray-600">
+                                <p className="flex justify-between border-b border-gray-50 pb-1">
+                                  <span className="font-medium">System Owner:</span> 
+                                  <span>{item.systemOwner || "N/A"}</span>
+                                </p>
+                                <p className="flex justify-between border-b border-gray-50 pb-1">
+                                  <span className="font-medium">Custodian:</span> 
+                                  <span>{item.systemCustodian || "N/A"}</span>
+                                </p>
+                                <p className="flex justify-between border-b border-gray-50 pb-1">
+                                  <span className="font-medium">IT Contact:</span> 
+                                  <span>{item.primaryItContact || "N/A"}</span>
+                                </p>
+                                <p className="flex justify-between">
+                                  <span className="font-medium">Approver Grp:</span> 
+                                  <span>{item.approverGroup || "N/A"}</span>
+                                </p>
+                              </div>
+                            </div>
+                            
+                            {/* Business */}
+                            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+                              <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                                <LayoutTemplate size={16} className="text-[#d52b1e]" />
+                                Business
+                              </h4>
+                              <div className="space-y-2 text-gray-600">
+                                <p className="flex justify-between border-b border-gray-50 pb-1">
+                                  <span className="font-medium">L1 Business:</span> 
+                                  <span>{item.level1BusinessArea || "N/A"}</span>
+                                </p>
+                                <p className="flex justify-between border-b border-gray-50 pb-1">
+                                  <span className="font-medium">Cost Center:</span> 
+                                  <span>{item.costCenter || "N/A"}</span>
+                                </p>
+                                <p className="flex justify-between border-b border-gray-50 pb-1">
+                                  <span className="font-medium">CC Approver:</span> 
+                                  <span>{item.costCenterApprover || "N/A"}</span>
+                                </p>
+                                <p className="flex justify-between border-b border-gray-50 pb-1">
+                                  <span className="font-medium">Proj Center:</span> 
+                                  <span>{item.projectCenter || "N/A"}</span>
+                                </p>
+                                <div className="mt-3 pt-3 flex justify-between items-center">
+                                  <span className="font-medium text-gray-900">Publish to Marketplace:</span> 
+                                  <span
+                                    className={`px-2.5 py-1 rounded-md text-xs font-bold ${
+                                      item.publishToMarketplace === "Yes"
+                                        ? "bg-green-100 text-green-800 border border-green-200"
+                                        : "bg-gray-100 text-gray-800 border border-gray-200"
+                                    }`}
+                                  >
+                                    {item.publishToMarketplace || "No"}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>
           </div>
-          {DUMMY_INGESTIONS.length === 0 && (
+          {ingestions.length === 0 && (
             <div className="p-12 text-center text-gray-500">
               No ingestion requests found.
             </div>
