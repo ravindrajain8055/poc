@@ -12,8 +12,18 @@ import {
 } from "lucide-react";
 
 const DUMMY_RESULTS = [
-  { id: 1, title: "PR review EDB process", description: "Standard operating procedure for performing PR reviews on Enterprise Data components." },
-  { id: 2, title: "EDB core components", description: "Documentation and repository links for the core foundational elements of the Enterprise Database." }
+  {
+    id: 1,
+    title: "PR review EDB",
+    description:
+      "Standard operating procedure for performing PR reviews on Enterprise Data components.",
+  },
+  {
+    id: 2,
+    title: "EDB core components",
+    description:
+      "Documentation and repository links for the core foundational elements of the Enterprise Database.",
+  },
 ];
 
 const Home = () => {
@@ -27,9 +37,14 @@ const Home = () => {
       setSearchState("idle");
       return;
     }
-    
+
     // Dummy matching logic
-    if (q.includes("pr") || q.includes("review") || q.includes("edb") || q.includes("component")) {
+    if (
+      q.includes("pr") ||
+      q.includes("review") ||
+      q.includes("edb") ||
+      q.includes("component")
+    ) {
       setSearchState("results");
     } else {
       setSearchState("no-results");
@@ -37,30 +52,38 @@ const Home = () => {
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       handleSearch();
     }
   };
 
   const openChatbot = () => {
     // Custom event to trigger chatbot from anywhere
-    window.dispatchEvent(new Event('toggle-chatbot'));
+    window.dispatchEvent(new Event("toggle-chatbot"));
   };
 
   const renderActionButtons = (compact = false) => (
-    <div className={`flex gap-4 ${compact ? 'justify-center z-10 relative -mb-4' : 'justify-center w-full'}`}>
-      <button 
-        onClick={() => navigate('/data-ingestion')}
+    <div
+      className={`flex gap-4 ${compact ? "justify-center z-10 relative -mb-4" : "justify-center w-full"}`}
+    >
+      <button
+        onClick={() => navigate("/data-ingestion")}
         className="flex items-center gap-2 bg-white border border-gray-200 shadow-sm hover:shadow-md hover:border-[#d52b1e] text-gray-800 px-5 py-3 rounded-lg font-medium transition-all group"
       >
-        <Database size={18} className="text-[#d52b1e] group-hover:scale-110 transition-transform" />
+        <Database
+          size={18}
+          className="text-[#d52b1e] group-hover:scale-110 transition-transform"
+        />
         Start data ingestion
       </button>
-      <button 
+      <button
         onClick={openChatbot}
         className="flex items-center gap-2 bg-white border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-500 text-gray-800 px-5 py-3 rounded-lg font-medium transition-all group"
       >
-        <Bot size={18} className="text-blue-500 group-hover:scale-110 transition-transform" />
+        <Bot
+          size={18}
+          className="text-blue-500 group-hover:scale-110 transition-transform"
+        />
         Can't find it? Try AI search
       </button>
     </div>
@@ -101,7 +124,7 @@ const Home = () => {
                   <X size={20} />
                 </button>
               )}
-              <button 
+              <button
                 onClick={handleSearch}
                 className="absolute right-2 bg-white text-gray-500 hover:text-gray-800 p-2 rounded-md transition-colors"
               >
@@ -118,10 +141,9 @@ const Home = () => {
       {/* Quick Actions Section */}
       <div className="w-full bg-gray-50 flex-1 py-12 px-8 flex justify-center relative">
         <div className="w-full max-w-5xl flex flex-col gap-6">
-          
           <AnimatePresence mode="wait">
             {searchState === "idle" && (
-              <motion.div 
+              <motion.div
                 key="idle"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -142,7 +164,7 @@ const Home = () => {
             )}
 
             {searchState === "no-results" && (
-              <motion.div 
+              <motion.div
                 key="no-results"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -150,15 +172,19 @@ const Home = () => {
                 className="flex flex-col items-center justify-center py-8 gap-8"
               >
                 <div className="text-center">
-                  <h3 className="text-xl font-semibold text-gray-800">No matching products found</h3>
-                  <p className="text-gray-500 mt-2">Try adjusting your search terms or explore these options.</p>
+                  <h3 className="text-xl font-semibold text-gray-800">
+                    No matching products found
+                  </h3>
+                  <p className="text-gray-500 mt-2">
+                    Try adjusting your search terms or explore these options.
+                  </p>
                 </div>
                 {renderActionButtons()}
               </motion.div>
             )}
 
             {searchState === "results" && (
-              <motion.div 
+              <motion.div
                 key="results"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -166,7 +192,7 @@ const Home = () => {
                 className="flex flex-col gap-6"
               >
                 {/* Unsatisfied state actions - subtle and compact */}
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.3 }}
@@ -189,12 +215,15 @@ const Home = () => {
                     >
                       {/* Animated left accent border */}
                       <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#d52b1e] scale-y-0 group-hover:scale-y-100 transition-transform origin-top duration-300"></div>
-                      
+
                       <div className="flex justify-between items-start mb-2">
                         <h4 className="text-lg font-bold text-[#d52b1e] group-hover:text-red-700 transition-colors">
                           {result.title}
                         </h4>
-                        <ChevronRight size={18} className="text-gray-400 group-hover:text-[#d52b1e] group-hover:translate-x-1 transition-all" />
+                        <ChevronRight
+                          size={18}
+                          className="text-gray-400 group-hover:text-[#d52b1e] group-hover:translate-x-1 transition-all"
+                        />
                       </div>
                       <p className="text-gray-600 text-sm line-clamp-2 mt-1">
                         {result.description}
