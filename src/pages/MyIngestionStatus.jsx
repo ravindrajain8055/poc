@@ -60,13 +60,13 @@ const ProgressTracker = ({ item }) => {
   // Mock approval sub-status if the item doesn't have one
   const approvalStatus = item.approvalStatus || {
     enterprise_agreement: true,
-    cr: true,
-    user: false,
+    change_request: true,
+    user_story: false,
   };
   const isApprovalFullyGreen =
     approvalStatus.enterprise_agreement &&
-    approvalStatus.cr &&
-    approvalStatus.user;
+    approvalStatus.change_request &&
+    approvalStatus.user_story;
 
   return (
     <div className="flex items-center w-full max-w-md mt-4">
@@ -142,9 +142,9 @@ const ProgressTracker = ({ item }) => {
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="flex items-center gap-1.5">
-                        <ShieldCheck size={12} /> CR
+                        <ShieldCheck size={12} /> Change Request
                       </span>
-                      {approvalStatus.cr ? (
+                      {approvalStatus.change_request ? (
                         <CheckCircle2 size={12} className="text-green-400" />
                       ) : (
                         <Clock size={12} className="text-yellow-400" />
@@ -152,9 +152,9 @@ const ProgressTracker = ({ item }) => {
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="flex items-center gap-1.5">
-                        <UserCheck size={12} /> User
+                        <UserCheck size={12} /> User Story
                       </span>
-                      {approvalStatus.user ? (
+                      {approvalStatus.user_story ? (
                         <CheckCircle2 size={12} className="text-green-400" />
                       ) : (
                         <Clock size={12} className="text-yellow-400" />
@@ -305,8 +305,8 @@ const MyIngestionStatus = () => {
           publishToMarketplace: "Yes",
           approvalStatus: {
             enterprise_agreement: true,
-            cr: true,
-            user: false,
+            change_request: true,
+            user_story: false,
           },
           comments: {
             review: "Initial review passed. Data schema looks well-formed.",
@@ -325,8 +325,8 @@ const MyIngestionStatus = () => {
           publishToMarketplace: "No",
           approvalStatus: {
             enterprise_agreement: true,
-            cr: true,
-            user: true,
+            change_request: true,
+            user_story: true,
           },
           comments: {
             review: "Review approved.",
@@ -349,8 +349,8 @@ const MyIngestionStatus = () => {
           cancelledAfterStage: "development",
           approvalStatus: {
             enterprise_agreement: true,
-            cr: true,
-            user: true,
+            crchange_request: true,
+            user_story: true,
           },
           comments: {
             review: "Looks good to proceed.",
@@ -370,8 +370,8 @@ const MyIngestionStatus = () => {
         currentStage: item.currentStage || "review",
         approvalStatus: item.approvalStatus || {
           enterprise_agreement: true,
-          cr: true,
-          user: false,
+          change_request: true,
+          user_story: false,
         },
         comments: item.comments || {
           review: "Submitted for initial review.",
@@ -474,7 +474,7 @@ const MyIngestionStatus = () => {
                     {/* Expandable Accordion Row */}
                     {expandedRows[item.id] && (
                       <tr className="bg-gray-50/80 border-t border-gray-100">
-                        <td colSpan={4} className="p-6">
+                        <td colSpan={4} className="py-6 pr-3">
                           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 text-sm pl-8">
                             {/* Detailed Metadata Fields */}
                             <div className="lg:col-span-2 space-y-6">

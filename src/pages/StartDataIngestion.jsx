@@ -194,9 +194,14 @@ const StartDataIngestion = () => {
   };
 
   const renderStepper = () => {
-    const steps = ["Basic Details", "Technical Details", "Marketplace", "Review"];
+    const steps = [
+      "Basic Details",
+      "Technical Details",
+      "Marketplace",
+      "Review",
+    ];
     return (
-      <div className="flex justify-center items-center mb-6 px-4 mt-2">
+      <div className="flex justify-center items-center mb-6 px-4 mt-5 pb-4 border-b-1 border-gray-200">
         {steps.map((step, index) => {
           const stageNum = index + 1;
           const isActive = currentStage === stageNum;
@@ -350,9 +355,9 @@ const StartDataIngestion = () => {
                   <FileText size={18} className="text-gray-400" />
                 </div>
                 <div
-                  className={`block w-full pl-10 pr-10 py-2.5 border ${
+                  className={`block w-full pl-10 pr-10 py-1.5 border ${
                     errors.dataFormat ? "border-red-500" : "border-gray-300"
-                  } bg-white rounded-md shadow-sm sm:text-sm min-h-[42px] flex items-center`}
+                  } bg-white rounded-md shadow-sm sm:text-sm min-h-[32px] flex items-center`}
                 >
                   {formData.dataFormat ? (
                     <span className="text-gray-900">{formData.dataFormat}</span>
@@ -603,34 +608,118 @@ const StartDataIngestion = () => {
           <form onSubmit={handleFinalSubmit} className="px-8 pb-8">
             <div className="bg-gray-50/50 p-6 rounded-lg border border-gray-100 mb-6 space-y-6 text-sm">
               <div>
-                <h4 className="font-bold text-gray-900 border-b border-gray-200 pb-2 mb-3 text-base">Basic Details</h4>
+                <h4 className="font-bold text-gray-900 border-b border-gray-200 pb-2 mb-3 text-base">
+                  Basic Details
+                </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div><span className="font-medium text-gray-500">Name:</span> <span className="text-gray-900 block mt-1">{formData.dataName}</span></div>
-                  <div><span className="font-medium text-gray-500">Format:</span> <span className="text-gray-900 block mt-1">{formData.dataFormat}</span></div>
-                  <div className="col-span-1 md:col-span-2"><span className="font-medium text-gray-500">Description:</span> <span className="text-gray-900 block mt-1">{formData.dataDescription}</span></div>
-                  <div className="col-span-1 md:col-span-2"><span className="font-medium text-gray-500">Source:</span> <span className="text-gray-900 break-all block mt-1">{formData.sourceLink}</span></div>
-                </div>
-              </div>
-              
-              <div>
-                <h4 className="font-bold text-gray-900 border-b border-gray-200 pb-2 mb-3 text-base">Technical & Ownership Details</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  <div><span className="font-medium text-gray-500">App Name:</span> <span className="text-gray-900 block mt-1">{formData.appName}</span></div>
-                  <div><span className="font-medium text-gray-500">App CI:</span> <span className="text-gray-900 block mt-1">{formData.applicationCi}</span></div>
-                  <div><span className="font-medium text-gray-500">Cost Center:</span> <span className="text-gray-900 block mt-1">{formData.costCenter}</span></div>
-                  <div><span className="font-medium text-gray-500">Project Center:</span> <span className="text-gray-900 block mt-1">{formData.projectCenter}</span></div>
-                  <div><span className="font-medium text-gray-500">System Owner:</span> <span className="text-gray-900 block mt-1">{formData.systemOwner}</span></div>
-                  <div><span className="font-medium text-gray-500">System Custodian:</span> <span className="text-gray-900 block mt-1">{formData.systemCustodian}</span></div>
-                  <div><span className="font-medium text-gray-500">HIPAA:</span> <span className="text-gray-900 block mt-1">{formData.hipaa}</span></div>
-                  <div><span className="font-medium text-gray-500">Data Classification:</span> <span className="text-gray-900 block mt-1">{formData.dataClassification}</span></div>
+                  <div>
+                    <span className="font-medium text-gray-500">Name:</span>{" "}
+                    <span className="text-gray-900 block mt-1">
+                      {formData.dataName}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-500">Format:</span>{" "}
+                    <span className="text-gray-900 block mt-1">
+                      {formData.dataFormat}
+                    </span>
+                  </div>
+                  <div className="col-span-1 md:col-span-2">
+                    <span className="font-medium text-gray-500">
+                      Description:
+                    </span>{" "}
+                    <span className="text-gray-900 block mt-1">
+                      {formData.dataDescription}
+                    </span>
+                  </div>
+                  <div className="col-span-1 md:col-span-2">
+                    <span className="font-medium text-gray-500">Source:</span>{" "}
+                    <span className="text-gray-900 break-all block mt-1">
+                      {formData.sourceLink}
+                    </span>
+                  </div>
                 </div>
               </div>
 
               <div>
-                <h4 className="font-bold text-gray-900 border-b border-gray-200 pb-2 mb-3 text-base">Marketplace</h4>
+                <h4 className="font-bold text-gray-900 border-b border-gray-200 pb-2 mb-3 text-base">
+                  Technical & Ownership Details
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  <div>
+                    <span className="font-medium text-gray-500">App Name:</span>{" "}
+                    <span className="text-gray-900 block mt-1">
+                      {formData.appName}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-500">App CI:</span>{" "}
+                    <span className="text-gray-900 block mt-1">
+                      {formData.applicationCi}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-500">
+                      Cost Center:
+                    </span>{" "}
+                    <span className="text-gray-900 block mt-1">
+                      {formData.costCenter}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-500">
+                      Project Center:
+                    </span>{" "}
+                    <span className="text-gray-900 block mt-1">
+                      {formData.projectCenter}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-500">
+                      System Owner:
+                    </span>{" "}
+                    <span className="text-gray-900 block mt-1">
+                      {formData.systemOwner}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-500">
+                      System Custodian:
+                    </span>{" "}
+                    <span className="text-gray-900 block mt-1">
+                      {formData.systemCustodian}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-500">HIPAA:</span>{" "}
+                    <span className="text-gray-900 block mt-1">
+                      {formData.hipaa}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-500">
+                      Data Classification:
+                    </span>{" "}
+                    <span className="text-gray-900 block mt-1">
+                      {formData.dataClassification}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-bold text-gray-900 border-b border-gray-200 pb-2 mb-3 text-base">
+                  Marketplace
+                </h4>
                 <div className="flex items-center mt-2">
-                  <span className="font-medium text-gray-500">Publish to Marketplace:</span> 
-                  <span className={`ml-3 px-2.5 py-1 rounded-md text-xs font-bold ${formData.publishToMarketplace === 'Yes' ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-gray-100 text-gray-800 border border-gray-200'}`}>{formData.publishToMarketplace}</span>
+                  <span className="font-medium text-gray-500">
+                    Publish to Marketplace:
+                  </span>
+                  <span
+                    className={`ml-3 px-2.5 py-1 rounded-md text-xs font-bold ${formData.publishToMarketplace === "Yes" ? "bg-green-100 text-green-800 border border-green-200" : "bg-gray-100 text-gray-800 border border-gray-200"}`}
+                  >
+                    {formData.publishToMarketplace}
+                  </span>
                 </div>
               </div>
             </div>
