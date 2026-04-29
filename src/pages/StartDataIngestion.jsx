@@ -56,6 +56,7 @@ const StartDataIngestion = () => {
   const [showToast, setShowToast] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [formatSearch, setFormatSearch] = useState("");
+  const [level1BusinessAreaOption, setLevel1BusinessAreaOption] = useState("");
 
   const filteredFormats = FORMAT_OPTIONS.filter((format) =>
     format.toLowerCase().includes(formatSearch.toLowerCase()),
@@ -135,6 +136,7 @@ const StartDataIngestion = () => {
       approverGroup: "",
       applicationCi: "",
     }));
+    setLevel1BusinessAreaOption("");
     setErrors({});
   };
 
@@ -181,6 +183,7 @@ const StartDataIngestion = () => {
         applicationCi: "",
         publishToMarketplace: "Yes",
       });
+      setLevel1BusinessAreaOption("");
       setCurrentStage(1);
       navigate("/my-ingestion");
     }, 2000);
@@ -263,6 +266,33 @@ const StartDataIngestion = () => {
             errors[field] ? "border-red-500" : "border-gray-300"
           } rounded-md shadow-sm focus:ring-[#d52b1e] focus:border-[#d52b1e] sm:text-sm transition-colors`}
         />
+        {errors[field] && (
+          <p className="mt-1 text-xs text-red-500">{errors[field]}</p>
+        )}
+      </div>
+    </div>
+  );
+
+  const renderSelectField = (label, field, options) => (
+    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 py-3 border-b border-gray-100 last:border-0">
+      <label className="w-full sm:w-1/3 text-sm font-medium text-gray-700">
+        {label} <span className="text-red-500">*</span>
+      </label>
+      <div className="w-full sm:w-2/3">
+        <select
+          value={formData[field]}
+          onChange={(e) => handleInputChange(field, e.target.value)}
+          className={`block w-full px-3 py-2 border ${
+            errors[field] ? "border-red-500" : "border-gray-300"
+          } rounded-md shadow-sm focus:ring-[#d52b1e] focus:border-[#d52b1e] sm:text-sm transition-colors bg-white`}
+        >
+          <option value="">Select...</option>
+          {options.map((opt) => (
+            <option key={opt.value || opt} value={opt.value || opt}>
+              {opt.label || opt}
+            </option>
+          ))}
+        </select>
         {errors[field] && (
           <p className="mt-1 text-xs text-red-500">{errors[field]}</p>
         )}
@@ -486,22 +516,66 @@ const StartDataIngestion = () => {
                   "primaryItContact",
                   "e.g. IT Support",
                 )}
-                {renderStage2Field(
-                  "Level 1 Business Area",
-                  "level1BusinessArea",
-                  "e.g. AADS",
-                )}
+                <div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4 py-3 border-b border-gray-100 last:border-0">
+                  <label className="w-full sm:w-1/3 text-sm font-medium text-gray-700 mt-2">
+                    Level 1 Business Area <span className="text-red-500">*</span>
+                  </label>
+                  <div className="w-full sm:w-2/3 space-y-2">
+                    <select
+                      value={level1BusinessAreaOption}
+                      onChange={(e) => {
+                        setLevel1BusinessAreaOption(e.target.value);
+                        if (e.target.value !== "Other") {
+                          handleInputChange("level1BusinessArea", e.target.value);
+                        } else {
+                          handleInputChange("level1BusinessArea", "");
+                        }
+                      }}
+                      className={`block w-full px-3 py-2 border ${
+                        errors.level1BusinessArea && !level1BusinessAreaOption ? "border-red-500" : "border-gray-300"
+                      } rounded-md shadow-sm focus:ring-[#d52b1e] focus:border-[#d52b1e] sm:text-sm transition-colors bg-white`}
+                    >
+                      <option value="">Select...</option>
+                      <option value="MD IDS">MD IDS</option>
+                      <option value="Business Units IDS">Business Units IDS</option>
+                      <option value="MQ IDS">MQ IDS</option>
+                      <option value="AADS">AADS</option>
+                      <option value="Global Info services">Global Info services</option>
+                      <option value="Other">Other</option>
+                    </select>
+                    
+                    {level1BusinessAreaOption === "Other" && (
+                      <input
+                        type="text"
+                        value={formData.level1BusinessArea}
+                        onChange={(e) => handleInputChange("level1BusinessArea", e.target.value)}
+                        placeholder="Please specify"
+                        className={`block w-full px-3 py-2 border ${
+                          errors.level1BusinessArea ? "border-red-500" : "border-gray-300"
+                        } rounded-md shadow-sm focus:ring-[#d52b1e] focus:border-[#d52b1e] sm:text-sm transition-colors`}
+                      />
+                    )}
+                    {errors.level1BusinessArea && (
+                      <p className="mt-1 text-xs text-red-500">{errors.level1BusinessArea}</p>
+                    )}
+                  </div>
+                </div>
                 {renderStage2Field(
                   "Project Center",
                   "projectCenter",
                   "e.g. 67890",
                 )}
-                {renderStage2Field(
+                {renderSelectField(
                   "Data Classification",
                   "dataClassification",
-                  "e.g. Yellow/Green",
+                  [
+                    { value: "green", label: "Green" },
+                    { value: "yellow", label: "Yellow" },
+                    { value: "orange", label: "Orange" },
+                    { value: "red", label: "Red" }
+                  ]
                 )}
-                {renderStage2Field("HIPAA", "hipaa", "Yes/No")}
+                {renderSelectField("Require Hipaa compliance", "hipaa", ["Yes", "No"])}
                 {renderStage2Field(
                   "Source Git Repo",
                   "sourceGitRepo",
