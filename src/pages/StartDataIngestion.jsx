@@ -34,6 +34,7 @@ const StartDataIngestion = () => {
     dataDescription: location.state?.prefillDataDescription || "",
     dataFormat: "",
     sourceLink: "",
+    businessArea: "",
     // Stage 2
     appName: "",
     costCenter: "",
@@ -70,6 +71,8 @@ const StartDataIngestion = () => {
     if (!formData.dataFormat) newErrors.dataFormat = "Data Format is required";
     if (!formData.sourceLink.trim())
       newErrors.sourceLink = "Source Link is required";
+    if (!formData.businessArea)
+      newErrors.businessArea = "Business Area is required";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -168,6 +171,7 @@ const StartDataIngestion = () => {
         dataDescription: "",
         dataFormat: "",
         sourceLink: "",
+        businessArea: "",
         appName: "",
         costCenter: "",
         costCenterApprover: "",
@@ -343,7 +347,7 @@ const StartDataIngestion = () => {
                   className={`block w-full pl-10 pr-3 py-2.5 border ${
                     errors.dataName ? "border-red-500" : "border-gray-300"
                   } rounded-md shadow-sm focus:ring-[#d52b1e] focus:border-[#d52b1e] sm:text-sm transition-colors`}
-                  placeholder="e.g. Sales Q3 Report"
+                  placeholder="e.g. IQVA Commercials"
                 />
               </div>
               {errors.dataName && (
@@ -364,7 +368,7 @@ const StartDataIngestion = () => {
                 className={`block w-full p-3 border ${
                   errors.dataDescription ? "border-red-500" : "border-gray-300"
                 } rounded-md shadow-sm focus:ring-[#d52b1e] focus:border-[#d52b1e] sm:text-sm transition-colors`}
-                placeholder="Provide a detailed description of the dataset contents..."
+                placeholder="Provide a detailed description about the data and how this data is going to be used"
               />
               {errors.dataDescription && (
                 <p className="mt-1 text-xs text-red-500">
@@ -387,7 +391,7 @@ const StartDataIngestion = () => {
                 <div
                   className={`block w-full pl-10 pr-10 py-1.5 border ${
                     errors.dataFormat ? "border-red-500" : "border-gray-300"
-                  } bg-white rounded-md shadow-sm sm:text-sm min-h-[32px] flex items-center`}
+                  } bg-white rounded-md shadow-sm sm:text-sm min-h-[24px] flex items-center`}
                 >
                   {formData.dataFormat ? (
                     <span className="text-gray-900">{formData.dataFormat}</span>
@@ -440,7 +444,7 @@ const StartDataIngestion = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Data resides at / Source link{" "}
+                Data resides at ? (Source File System/DB/S3 Bucket)
                 <span className="text-red-500">*</span>
               </label>
               <div className="relative">
@@ -461,6 +465,34 @@ const StartDataIngestion = () => {
               </div>
               {errors.sourceLink && (
                 <p className="mt-1 text-xs text-red-500">{errors.sourceLink}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Business Area <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={formData.businessArea}
+                onChange={(e) =>
+                  handleInputChange("businessArea", e.target.value)
+                }
+                className={`block w-full px-3 py-2.5 border ${
+                  errors.businessArea ? "border-red-500" : "border-gray-300"
+                } rounded-md shadow-sm focus:ring-[#d52b1e] focus:border-[#d52b1e] sm:text-sm transition-colors bg-white`}
+              >
+                <option value="">Select...</option>
+                <option value="BU">BU</option>
+                <option value="LRL">LRL</option>
+                <option value="GS">GS</option>
+                <option value="GIS">GIS</option>
+                <option value="MQ">MQ</option>
+                <option value="AADS">AADS</option>
+              </select>
+              {errors.businessArea && (
+                <p className="mt-1 text-xs text-red-500">
+                  {errors.businessArea}
+                </p>
               )}
             </div>
 
@@ -518,7 +550,8 @@ const StartDataIngestion = () => {
                 )}
                 <div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4 py-3 border-b border-gray-100 last:border-0">
                   <label className="w-full sm:w-1/3 text-sm font-medium text-gray-700 mt-2">
-                    Level 1 Business Area <span className="text-red-500">*</span>
+                    Level 1 Business Area{" "}
+                    <span className="text-red-500">*</span>
                   </label>
                   <div className="w-full sm:w-2/3 space-y-2">
                     <select
@@ -526,37 +559,55 @@ const StartDataIngestion = () => {
                       onChange={(e) => {
                         setLevel1BusinessAreaOption(e.target.value);
                         if (e.target.value !== "Other") {
-                          handleInputChange("level1BusinessArea", e.target.value);
+                          handleInputChange(
+                            "level1BusinessArea",
+                            e.target.value,
+                          );
                         } else {
                           handleInputChange("level1BusinessArea", "");
                         }
                       }}
                       className={`block w-full px-3 py-2 border ${
-                        errors.level1BusinessArea && !level1BusinessAreaOption ? "border-red-500" : "border-gray-300"
+                        errors.level1BusinessArea && !level1BusinessAreaOption
+                          ? "border-red-500"
+                          : "border-gray-300"
                       } rounded-md shadow-sm focus:ring-[#d52b1e] focus:border-[#d52b1e] sm:text-sm transition-colors bg-white`}
                     >
                       <option value="">Select...</option>
                       <option value="MD IDS">MD IDS</option>
-                      <option value="Business Units IDS">Business Units IDS</option>
+                      <option value="Business Units IDS">
+                        Business Units IDS
+                      </option>
                       <option value="MQ IDS">MQ IDS</option>
                       <option value="AADS">AADS</option>
-                      <option value="Global Info services">Global Info services</option>
+                      <option value="Global Info services">
+                        Global Info services
+                      </option>
                       <option value="Other">Other</option>
                     </select>
-                    
+
                     {level1BusinessAreaOption === "Other" && (
                       <input
                         type="text"
                         value={formData.level1BusinessArea}
-                        onChange={(e) => handleInputChange("level1BusinessArea", e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange(
+                            "level1BusinessArea",
+                            e.target.value,
+                          )
+                        }
                         placeholder="Please specify"
                         className={`block w-full px-3 py-2 border ${
-                          errors.level1BusinessArea ? "border-red-500" : "border-gray-300"
+                          errors.level1BusinessArea
+                            ? "border-red-500"
+                            : "border-gray-300"
                         } rounded-md shadow-sm focus:ring-[#d52b1e] focus:border-[#d52b1e] sm:text-sm transition-colors`}
                       />
                     )}
                     {errors.level1BusinessArea && (
-                      <p className="mt-1 text-xs text-red-500">{errors.level1BusinessArea}</p>
+                      <p className="mt-1 text-xs text-red-500">
+                        {errors.level1BusinessArea}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -572,10 +623,13 @@ const StartDataIngestion = () => {
                     { value: "green", label: "Green" },
                     { value: "yellow", label: "Yellow" },
                     { value: "orange", label: "Orange" },
-                    { value: "red", label: "Red" }
-                  ]
+                    { value: "red", label: "Red" },
+                  ],
                 )}
-                {renderSelectField("Require Hipaa compliance", "hipaa", ["Yes", "No"])}
+                {renderSelectField("Require Hipaa compliance", "hipaa", [
+                  "Yes",
+                  "No",
+                ])}
                 {renderStage2Field(
                   "Source Git Repo",
                   "sourceGitRepo",
@@ -696,6 +750,14 @@ const StartDataIngestion = () => {
                     <span className="font-medium text-gray-500">Format:</span>{" "}
                     <span className="text-gray-900 block mt-1">
                       {formData.dataFormat}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-500">
+                      Business Area:
+                    </span>{" "}
+                    <span className="text-gray-900 block mt-1">
+                      {formData.businessArea}
                     </span>
                   </div>
                   <div className="col-span-1 md:col-span-2">

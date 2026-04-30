@@ -11,7 +11,6 @@ import {
   Search,
   Store,
   XCircle,
-  MessageSquare,
   FileCheck,
   UserCheck,
   ShieldCheck,
@@ -132,7 +131,7 @@ const ProgressTracker = ({ item }) => {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="flex items-center gap-1.5">
-                        <FileCheck size={12} /> EA
+                        <FileCheck size={12} /> Enterprise Agreement
                       </span>
                       {approvalStatus.enterprise_agreement ? (
                         <CheckCircle2 size={12} className="text-green-400" />
@@ -265,11 +264,6 @@ const TimelineView = ({ item }) => {
                     {/* Tiny triangle for speech bubble effect */}
                     <div className="absolute -top-2 left-4 border-4 border-transparent border-b-gray-100"></div>
                     <div className="absolute -top-[7px] left-4 border-4 border-transparent border-b-gray-50"></div>
-
-                    <p className="font-semibold text-gray-800 mb-1 flex items-center gap-1.5 text-xs uppercase tracking-wider">
-                      <MessageSquare size={12} className="text-gray-500" />{" "}
-                      Updates
-                    </p>
                     <p className="text-gray-600">
                       {item.comments?.[stage.id] ||
                         "No updates available for this stage yet."}
@@ -300,6 +294,7 @@ const MyIngestionStatus = () => {
           dataDescription: "Quarterly sales figures and analysis for Q3 2025.",
           dataFormat: "Excel",
           sourceLink: "https://internal.lilly.com/data/sales-q3",
+          businessArea: "BU",
           currentStage: "approval",
           date: "2026-04-26",
           publishToMarketplace: "Yes",
@@ -320,6 +315,7 @@ const MyIngestionStatus = () => {
             "Anonymized patient demographic data for recent trials.",
           dataFormat: "Parquet",
           sourceLink: "s3://lilly-clinical-data/demographics/",
+          businessArea: "LRL",
           currentStage: "deploy",
           date: "2026-04-20",
           publishToMarketplace: "No",
@@ -342,6 +338,7 @@ const MyIngestionStatus = () => {
           dataDescription: "Old marketing campaigns from 2022.",
           dataFormat: "JSON",
           sourceLink: "s3://lilly-marketing/2022/",
+          businessArea: "GS",
           currentStage: "cancelled",
           date: "2026-04-28",
           publishToMarketplace: "No",
@@ -581,6 +578,12 @@ const MyIngestionStatus = () => {
                                   Business & Finance
                                 </h4>
                                 <div className="grid grid-cols-2 gap-4 text-xs text-gray-600">
+                                  <p className="flex justify-between border-b border-gray-50 pb-1">
+                                    <span className="font-medium">
+                                      Business Area:
+                                    </span>
+                                    <span>{item.businessArea || "N/A"}</span>
+                                  </p>
                                   <p className="flex justify-between border-b border-gray-50 pb-1">
                                     <span className="font-medium">
                                       L1 Business:
