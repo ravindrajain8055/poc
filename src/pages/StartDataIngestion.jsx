@@ -10,7 +10,6 @@ import {
   Loader2,
   Copy,
   ExternalLink,
-  Github
 } from "lucide-react";
 import Toast from "../components/ui/Toast";
 
@@ -159,45 +158,53 @@ const StartDataIngestion = () => {
     e.preventDefault();
     setIsCreatingRepo(true);
     setRepoStatus(null);
-    
+
     try {
-      const response = await fetch("http://localhost:8080/api/github/create-repo", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
+      const response = await fetch(
+        "http://localhost:8080/api/github/create-repo",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ formData }),
         },
-        body: JSON.stringify({ formData })
-      });
-      
+      );
+
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Failed to start creation");
-      
+      if (!response.ok)
+        throw new Error(data.error || "Failed to start creation");
+
       const { jobId } = data;
-      
+
       const pollInterval = setInterval(async () => {
         try {
-          const statusRes = await fetch(`http://localhost:8080/api/github/status/${jobId}`);
+          const statusRes = await fetch(
+            `http://localhost:8080/api/github/status/${jobId}`,
+          );
           const statusData = await statusRes.json();
-          
-          if (statusData.status === 'success') {
+
+          if (statusData.status === "success") {
             clearInterval(pollInterval);
             setIsCreatingRepo(false);
             setRepoStatus("success");
             setRepoData(statusData);
-            
-            const existing = JSON.parse(localStorage.getItem("ingestions") || "[]");
+
+            const existing = JSON.parse(
+              localStorage.getItem("ingestions") || "[]",
+            );
             const newSubmission = {
               ...formData,
               id: `ING-${Math.floor(1000 + Math.random() * 9000)}`,
               date: new Date().toISOString().split("T")[0],
               currentStage: "approval",
-              repoUrl: statusData.url
+              repoUrl: statusData.url,
             };
             localStorage.setItem(
               "ingestions",
-              JSON.stringify([...existing, newSubmission])
+              JSON.stringify([...existing, newSubmission]),
             );
-          } else if (statusData.status === 'error') {
+          } else if (statusData.status === "error") {
             clearInterval(pollInterval);
             setIsCreatingRepo(false);
             setRepoStatus("error");
@@ -207,7 +214,6 @@ const StartDataIngestion = () => {
           console.error("Polling error", pollErr);
         }
       }, 2000);
-      
     } catch (err) {
       console.error(err);
       setIsCreatingRepo(false);
@@ -331,8 +337,12 @@ const StartDataIngestion = () => {
     <div className="min-h-full bg-gray-50 flex flex-col items-center py-12 px-4 sm:px-6 lg:px-8">
       {showToast && (
         <Toast
-          message={repoStatus === 'error' ? "Error creating repository!" : "Data ingestion submitted successfully!"}
-          type={repoStatus === 'error' ? "error" : "success"}
+          message={
+            repoStatus === "error"
+              ? "Error creating repository!"
+              : "Data ingestion submitted successfully!"
+          }
+          type={repoStatus === "error" ? "error" : "success"}
           onClose={() => setShowToast(false)}
         />
       )}
@@ -342,36 +352,41 @@ const StartDataIngestion = () => {
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all">
             <div className="bg-green-500 p-6 text-center">
               <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner">
-                <Github size={32} className="text-green-600" />
+                {/* <Github size={32} className="text-green-600" /> */}
               </div>
               <h2 className="text-2xl font-bold text-white">Success!</h2>
-              <p className="text-green-50 mt-1">Repository created successfully</p>
+              <p className="text-green-50 mt-1">
+                Repository created successfully
+              </p>
             </div>
-            
+
             <div className="p-6 space-y-4">
               <p className="text-gray-600 text-sm text-center">
-                Your new repository is ready. You can now start adding your data and code.
+                Your new repository is ready. You can now start adding your data
+                and code.
               </p>
-              
+
               <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Repository URL</label>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                  Repository URL
+                </label>
                 <div className="flex items-center gap-2">
-                  <input 
-                    type="text" 
-                    readOnly 
-                    value={repoData.url} 
+                  <input
+                    type="text"
+                    readOnly
+                    value={repoData.url}
                     className="bg-white border border-gray-300 text-gray-800 text-sm rounded-md block w-full p-2.5 focus:ring-green-500 focus:border-green-500"
                   />
-                  <button 
+                  <button
                     onClick={() => navigator.clipboard.writeText(repoData.url)}
                     className="p-2.5 bg-gray-100 border border-gray-300 rounded-md text-gray-600 hover:bg-gray-200 hover:text-gray-900 transition-colors"
                     title="Copy to clipboard"
                   >
                     <Copy size={18} />
                   </button>
-                  <a 
-                    href={repoData.url} 
-                    target="_blank" 
+                  <a
+                    href={repoData.url}
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="p-2.5 bg-green-50 border border-green-200 rounded-md text-green-600 hover:bg-green-100 hover:text-green-700 transition-colors"
                     title="Open in new tab"
@@ -380,15 +395,30 @@ const StartDataIngestion = () => {
                   </a>
                 </div>
               </div>
-              
+
               <button
                 onClick={() => {
                   setRepoStatus(null);
                   setFormData({
-                    dataName: "", dataDescription: "", dataFormat: "", sourceLink: "", businessArea: "",
-                    appName: "", costCenter: "", costCenterApprover: "", systemOwner: "", systemCustodian: "",
-                    primaryItContact: "", level1BusinessArea: "", projectCenter: "", dataClassification: "",
-                    hipaa: "", sourceGitRepo: "", approverGroup: "", applicationCi: "", publishToMarketplace: "Yes",
+                    dataName: "",
+                    dataDescription: "",
+                    dataFormat: "",
+                    sourceLink: "",
+                    businessArea: "",
+                    appName: "",
+                    costCenter: "",
+                    costCenterApprover: "",
+                    systemOwner: "",
+                    systemCustodian: "",
+                    primaryItContact: "",
+                    level1BusinessArea: "",
+                    projectCenter: "",
+                    dataClassification: "",
+                    hipaa: "",
+                    sourceGitRepo: "",
+                    approverGroup: "",
+                    applicationCi: "",
+                    publishToMarketplace: "Yes",
                   });
                   setLevel1BusinessAreaOption("");
                   setCurrentStage(1);
