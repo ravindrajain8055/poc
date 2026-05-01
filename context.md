@@ -47,6 +47,7 @@ src/components/layout/MainLayout.jsx
 src/components/layout/Sidebar.jsx
 src/components/ui/Toast.jsx
 src/data/mockResources.js
+src/Demo/GithubController.js
 src/main.jsx
 src/pages/DemoPage.jsx
 src/pages/Home.jsx
@@ -57,6 +58,512 @@ src/pages/Tickets.jsx
 
 <files>
 This section contains the contents of the repository's files.
+
+<file path="src/Demo/GithubController.js">
+const jobs = {};
+
+const toKebabCase = (str) => {
+  if (!str) return "";
+  return str
+    .toString()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+};
+
+export const createRepo = async (req, res) => {
+  try {
+    const formData = req.body;
+    const dataName = formData.dataName || "default-data";
+
+    // Naming convention: aads-edb-<dataName-kebab>
+    const repoName = `aads-edb-${toKebabCase(dataName)}`;
+
+    // Tags from stage 2: maybe appName, costCenter, projectCenter?
+    const rawTags = [
+      formData.level1BusinessArea,
+      formData.dataClassification,
+      formData.businessArea,
+    ];
+    const tags = rawTags
+      .filter(Boolean)
+      .map((t) => toKebabCase(t))
+      .filter((t) => t.length > 0);
+
+    const jobId = `job-${Date.now()}`;
+    jobs[jobId] = { status: "loading" };
+
+    res.status(202).json({ jobId, message: "Repository creation started" });
+
+    // Background process
+    processRepoCreation(jobId, repoName, tags, formData);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to start repository creation" });
+  }
+};
+
+const processRepoCreation = async (jobId, repoName, tags, formData) => {
+  const token = process.env.GITHUB_TOKEN;
+  const owner = process.env.GITHUB_OWNER;
+
+  if (
+    !token ||
+    !owner ||
+    token.includes("replace_with") ||
+    owner.includes("replace_with")
+  ) {
+    // If not configured, just simulate success after 3 seconds for POC purposes
+    console.warn(
+      "GitHub credentials not properly configured. Simulating success...",
+    );
+    setTimeout(() => {
+      jobs[jobId] = {
+        status: "success",
+        url: `https://github.com/${owner || "mock-owner"}/${repoName}`,
+        message: "Mock Repository created successfully (Missing credentials)",
+      };
+    }, 3000);
+    return;
+  }
+
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    Accept: "application/vnd.github.v3+json",
+    "Content-Type": "application/json",
+    "User-Agent": "AADS-EDB-App",
+  };
+
+  try {
+    // 1. Create Repo in Organization
+    let createRes = await fetch(`https://api.github.com/orgs/${owner}/repos`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        name: repoName,
+        description:
+          formData.dataDescription || `Repository for ${formData.dataName}`,
+        private: true,
+        auto_init: true,
+      }),
+    });
+
+    let repoData = await createRes.json();
+    let repoFullName = "";
+
+    if (!createRes.ok) {
+      if (
+        repoData.errors &&
+        repoData.errors.some(
+          (e) => e.message && e.message.includes("already exists"),
+        )
+      ) {
+        // Repo already exists, let's just proceed with it
+        repoFullName = `${owner}/${repoName}`;
+      } else {
+        throw new Error(
+          repoData.message || "Failed to create repo in organization",
+        );
+      }
+    } else {
+      repoFullName = repoData.full_name || `${owner}/${repoName}`;
+    }
+
+    if (!repoFullName) repoFullName = `${owner}/${repoName}`;
+
+    // 2. Set Topics/Labels
+    if (tags.length > 0) {
+      await fetch(`https://api.github.com/repos/${repoFullName}/topics`, {
+        method: "PUT",
+        headers: {
+          ...headers,
+          Accept: "application/vnd.github.mercy-preview+json",
+        },
+        body: JSON.stringify({ names: tags }),
+      });
+    }
+
+    // 3. Add Files
+    const filesToCreate = [
+      {
+        path: "CODEOWNERS",
+        content: `* @${owner}`,
+      },
+      {
+        path: ".github/workflows/main.yml",
+        content:
+          'name: CI\non: [push]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v3\n      - run: echo "Hello World"',
+      },
+      {
+        path: "backend/.gitkeep",
+        content: "",
+      },
+      {
+        path: "frontend/.gitkeep",
+        content: "",
+      },
+    ];
+
+    for (const file of filesToCreate) {
+      // Check if file exists first to avoid 422 if we re-run
+      const checkRes = await fetch(
+        `https://api.github.com/repos/${repoFullName}/contents/${file.path}`,
+        {
+          method: "GET",
+          headers,
+        },
+      );
+
+      let sha = undefined;
+      if (checkRes.ok) {
+        const fileData = await checkRes.json();
+        sha = fileData.sha;
+      }
+
+      const contentEncoded = Buffer.from(file.content).toString("base64");
+      await fetch(
+        `https://api.github.com/repos/${repoFullName}/contents/${file.path}`,
+        {
+          method: "PUT",
+          headers,
+          body: JSON.stringify({
+            message: `Add ${file.path}`,
+            content: contentEncoded,
+            ...(sha && { sha }),
+          }),
+        },
+      );
+    }
+
+    jobs[jobId] = {
+      status: "success",
+      url: `https://github.com/${repoFullName}`,
+      message: "Repository created successfully",
+    };
+  } catch (error) {
+    console.error("Repo creation error:", error);
+    jobs[jobId] = {
+      status: "error",
+      message: error.message || "Error occurred during repo creation",
+    };
+  }
+};
+
+export const getRepoStatus = (req, res) => {
+  const { jobId } = req.params;
+  const job = jobs[jobId];
+  if (!job) {
+    return res.status(404).json({ error: "Job not found" });
+  }
+  res.json(job);
+};
+</file>
+
+<file path="src/components/layout/MainLayout.jsx">
+import React from 'react';
+import Sidebar from './Sidebar';
+
+const MainLayout = ({ children }) => {
+  return (
+    <div className="flex h-screen w-full overflow-hidden bg-white">
+      <Sidebar />
+      <main className="flex-1 overflow-y-auto">
+        {children}
+      </main>
+    </div>
+  );
+};
+
+export default MainLayout;
+</file>
+
+<file path="src/components/ui/Toast.jsx">
+import React, { useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { CheckCircle2, XCircle, X } from 'lucide-react';
+
+const Toast = ({ message, type = 'success', onClose, duration = 3000 }) => {
+  useEffect(() => {
+    if (duration > 0) {
+      const timer = setTimeout(() => {
+        onClose();
+      }, duration);
+      return () => clearTimeout(timer);
+    }
+  }, [duration, onClose]);
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0, y: 50, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 20, scale: 0.95 }}
+        className="fixed bottom-6 right-6 z-50 min-w-[300px] bg-white border border-gray-200 rounded-lg shadow-xl p-4 flex items-start gap-3"
+      >
+        {type === 'success' ? (
+          <CheckCircle2 className="text-green-500 flex-shrink-0 mt-0.5" size={20} />
+        ) : (
+          <XCircle className="text-red-500 flex-shrink-0 mt-0.5" size={20} />
+        )}
+        <div className="flex-1">
+          <p className="text-sm font-medium text-gray-900">{message}</p>
+        </div>
+        <button
+          onClick={onClose}
+          className="text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <X size={16} />
+        </button>
+      </motion.div>
+    </AnimatePresence>
+  );
+};
+
+export default Toast;
+</file>
+
+<file path="src/data/mockResources.js">
+export const mockResources = [
+  { id: 1, title: "Enterprise Data Strategy 2026", type: "Document", link: "#" },
+  { id: 2, title: "Data Catalog User Guide", type: "PDF", link: "#" },
+  { id: 3, title: "API Reference for Analytics", type: "Documentation", link: "#" },
+  { id: 4, title: "Metadata Manager Onboarding", type: "Video", link: "#" },
+];
+</file>
+
+<file path="src/main.jsx">
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import './index.css'
+import App from './App.jsx'
+
+createRoot(document.getElementById('root')).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+)
+</file>
+
+<file path="src/pages/DemoPage.jsx">
+import React from 'react';
+import { Sparkles } from 'lucide-react';
+
+const DemoPage = () => {
+  return (
+    <div className="flex flex-col min-h-full bg-gray-50">
+      <div className="bg-white border-b border-gray-200 px-8 py-6">
+        <h1 className="text-3xl font-bold text-gray-800">Demo Page</h1>
+        <p className="text-gray-500 mt-2">This is a proof-of-concept page to demonstrate routing and layout.</p>
+      </div>
+      
+      <div className="p-8 flex-1 flex flex-col items-center justify-center">
+        <div className="bg-white p-12 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center max-w-md">
+          <div className="w-16 h-16 bg-red-50 text-[#d52b1e] rounded-full flex items-center justify-center mb-6">
+            <Sparkles size={32} />
+          </div>
+          <h2 className="text-xl font-bold text-gray-800 mb-2">You found the demo page!</h2>
+          <p className="text-gray-500 mb-6">
+            This area could be populated with forms, data tables, dashboards, or any other enterprise feature required.
+          </p>
+          <button className="bg-[#d52b1e] hover:bg-red-700 text-white font-medium py-2 px-6 rounded-md transition-colors shadow-sm">
+            Explore Features
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default DemoPage;
+</file>
+
+<file path="src/pages/Tickets.jsx">
+import React, { useState } from 'react';
+import { Ticket, Search, Filter, Plus, Clock, CheckCircle2, AlertCircle, MoreHorizontal } from 'lucide-react';
+
+const DUMMY_TICKETS = [
+  {
+    id: 'TKT-1042',
+    title: 'Access Request: Sales Q3 Data',
+    type: 'Access',
+    status: 'Open',
+    priority: 'High',
+    assignee: 'Data Gov Team',
+    date: '2026-04-28',
+  },
+  {
+    id: 'TKT-1041',
+    title: 'Ingestion Pipeline Failure: Marketing Assets',
+    type: 'Bug',
+    status: 'In Progress',
+    priority: 'Critical',
+    assignee: 'Data Eng Team',
+    date: '2026-04-27',
+  },
+  {
+    id: 'TKT-1038',
+    title: 'Marketplace Publish Review',
+    type: 'Review',
+    status: 'Resolved',
+    priority: 'Medium',
+    assignee: 'Compliance',
+    date: '2026-04-25',
+  },
+  {
+    id: 'TKT-1035',
+    title: 'Update Data Classification for Patient Demographics',
+    type: 'Request',
+    status: 'Closed',
+    priority: 'Low',
+    assignee: 'Security',
+    date: '2026-04-20',
+  }
+];
+
+const Tickets = () => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
+
+  const filteredTickets = DUMMY_TICKETS.filter(ticket => {
+    const matchesSearch = ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) || ticket.id.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'All' || ticket.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'Open': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'In Progress': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'Resolved': return 'bg-green-100 text-green-800 border-green-200';
+      case 'Closed': return 'bg-gray-100 text-gray-800 border-gray-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getPriorityIcon = (priority) => {
+    switch (priority) {
+      case 'Critical': return <AlertCircle size={14} className="text-red-500" />;
+      case 'High': return <AlertCircle size={14} className="text-orange-500" />;
+      case 'Medium': return <Clock size={14} className="text-yellow-500" />;
+      case 'Low': return <CheckCircle2 size={14} className="text-green-500" />;
+      default: return null;
+    }
+  };
+
+  return (
+    <div className="min-h-full bg-gray-50 flex flex-col py-10 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto w-full">
+        {/* Header Section */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
+              <Ticket className="text-[#d52b1e]" size={24} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">My Tickets</h1>
+              <p className="text-gray-500 text-sm">Manage your support and request tickets</p>
+            </div>
+          </div>
+          <button className="flex items-center gap-2 bg-[#d52b1e] hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors shadow-sm">
+            <Plus size={16} />
+            Create Ticket
+          </button>
+        </div>
+
+        {/* Filters & Search */}
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6 flex flex-col sm:flex-row gap-4 justify-between items-center">
+          <div className="relative w-full sm:w-96">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            <input
+              type="text"
+              placeholder="Search by ID or title..."
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#d52b1e] focus:border-transparent outline-none text-sm"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <Filter size={18} className="text-gray-400" />
+            <select
+              className="w-full sm:w-auto border border-gray-300 rounded-md py-2 pl-3 pr-8 focus:ring-2 focus:ring-[#d52b1e] focus:border-transparent outline-none text-sm text-gray-700"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="All">All Statuses</option>
+              <option value="Open">Open</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Resolved">Resolved</option>
+              <option value="Closed">Closed</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Tickets Table */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-200 text-xs uppercase tracking-wider text-gray-500 font-semibold">
+                  <th className="p-4 pl-6">Ticket</th>
+                  <th className="p-4">Type</th>
+                  <th className="p-4">Status</th>
+                  <th className="p-4">Priority</th>
+                  <th className="p-4 hidden md:table-cell">Assignee</th>
+                  <th className="p-4 hidden sm:table-cell">Date</th>
+                  <th className="p-4 text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filteredTickets.map((ticket) => (
+                  <tr key={ticket.id} className="hover:bg-gray-50 transition-colors group">
+                    <td className="p-4 pl-6">
+                      <div className="font-medium text-gray-900 group-hover:text-[#d52b1e] transition-colors cursor-pointer">
+                        {ticket.title}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-0.5">{ticket.id}</div>
+                    </td>
+                    <td className="p-4">
+                      <span className="text-sm text-gray-700">{ticket.type}</span>
+                    </td>
+                    <td className="p-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(ticket.status)}`}>
+                        {ticket.status}
+                      </span>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center gap-1.5 text-sm text-gray-700">
+                        {getPriorityIcon(ticket.priority)}
+                        {ticket.priority}
+                      </div>
+                    </td>
+                    <td className="p-4 hidden md:table-cell text-sm text-gray-600">
+                      {ticket.assignee}
+                    </td>
+                    <td className="p-4 hidden sm:table-cell text-sm text-gray-500">
+                      {ticket.date}
+                    </td>
+                    <td className="p-4 text-center">
+                      <button className="text-gray-400 hover:text-gray-700 transition-colors p-1 rounded-md hover:bg-gray-100">
+                        <MoreHorizontal size={18} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {filteredTickets.length === 0 && (
+            <div className="p-12 text-center text-gray-500">
+              No tickets found matching your criteria.
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Tickets;
+</file>
 
 <file path="src/App.jsx">
 import React from 'react';
@@ -88,6 +595,247 @@ function App() {
 }
 
 export default App;
+</file>
+
+<file path="src/pages/Home.jsx">
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import { Search, X, Box, Database, Bot, ChevronRight } from "lucide-react";
+
+const DUMMY_RESULTS = [
+  {
+    id: 1,
+    title: "PR review EDB",
+    description:
+      "Standard operating procedure for performing PR reviews on Enterprise Data components.",
+  },
+  {
+    id: 2,
+    title: "EDB core components",
+    description:
+      "Documentation and repository links for the core foundational elements of the Enterprise Database.",
+  },
+];
+
+const Home = () => {
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchState, setSearchState] = useState("idle"); // 'idle', 'results', 'no-results'
+
+  const handleSearch = () => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) {
+      setSearchState("idle");
+      return;
+    }
+
+    // Dummy matching logic
+    if (
+      q.includes("pr") ||
+      q.includes("review") ||
+      q.includes("edb") ||
+      q.includes("component")
+    ) {
+      setSearchState("results");
+    } else {
+      setSearchState("no-results");
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  };
+
+  const openChatbot = () => {
+    // Custom event to trigger chatbot from anywhere
+    window.dispatchEvent(new Event("toggle-chatbot"));
+  };
+
+  const renderActionButtons = (compact = false) => (
+    <div
+      className={`flex gap-4 ${compact ? "justify-center z-10 relative -mb-4" : "justify-center w-full"}`}
+    >
+      <button
+        onClick={() => navigate("/data-ingestion")}
+        className="flex items-center gap-2 bg-white border border-gray-200 shadow-sm hover:shadow-md hover:border-[#d52b1e] text-gray-800 px-5 py-3 rounded-lg font-medium transition-all group"
+      >
+        <Database
+          size={18}
+          className="text-[#d52b1e] group-hover:scale-110 transition-transform"
+        />
+        Start data ingestion
+      </button>
+      <button
+        onClick={openChatbot}
+        className="flex items-center gap-2 bg-white border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-500 text-gray-800 px-5 py-3 rounded-lg font-medium transition-all group"
+      >
+        <Bot
+          size={18}
+          className="text-blue-500 group-hover:scale-110 transition-transform"
+        />
+        Can't find it? Try AI search
+      </button>
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col min-h-full bg-white">
+      {/* Hero Section */}
+      <div className="bg-[#d52b1e] w-full px-8 py-12 flex flex-col items-center justify-center relative">
+        <div className="w-full max-w-5xl z-10">
+          <h1 className="text-white text-5xl font-bold mb-4 tracking-tight">
+            Welcome to <span className="font-extrabold">Enterprise Data</span>
+          </h1>
+          <p className="text-white text-lg font-medium mb-10 tracking-wide opacity-90">
+            A Catalogue of technical products, to assist you in achieving your
+            goals.
+          </p>
+
+          {/* Search Bar Container */}
+          <div className="flex gap-4 w-full">
+            <div className="relative flex-1 flex items-center">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Start browsing our Marketplace for products..."
+                className="w-full bg-white text-gray-800 rounded-md py-4 pl-6 pr-12 text-lg focus:outline-none focus:ring-2 focus:ring-white/50 shadow-lg"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => {
+                    setSearchQuery("");
+                    setSearchState("idle");
+                  }}
+                  className="absolute right-14 text-gray-400 hover:text-gray-600 p-2"
+                >
+                  <X size={20} />
+                </button>
+              )}
+              <button
+                onClick={handleSearch}
+                className="absolute right-2 bg-white text-gray-500 hover:text-gray-800 p-2 rounded-md transition-colors"
+              >
+                <Search size={24} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Actions Section */}
+      <div className="w-full bg-gray-50 flex-1 py-12 px-8 flex justify-center relative">
+        <div className="w-full max-w-5xl flex flex-col gap-6">
+          <AnimatePresence mode="wait">
+            {searchState === "idle" && (
+              <motion.div
+                key="idle"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+              >
+                {/* Action Card 1 */}
+                <button className="bg-white border border-gray-200 rounded-lg p-6 flex flex-col items-center justify-center text-center gap-4 hover:shadow-md transition-all group">
+                  <Box
+                    size={32}
+                    className="text-[#d52b1e] group-hover:scale-110 transition-transform"
+                  />
+                  <span className="font-medium text-gray-800 text-sm">
+                    Your Favourites
+                  </span>
+                </button>
+              </motion.div>
+            )}
+
+            {searchState === "no-results" && (
+              <motion.div
+                key="no-results"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="flex flex-col items-center justify-center py-8 gap-8"
+              >
+                <div className="text-center">
+                  <h3 className="text-xl font-semibold text-gray-800">
+                    No matching products found
+                  </h3>
+                  <p className="text-gray-500 mt-2">
+                    Try adjusting your search terms or explore these options.
+                  </p>
+                </div>
+                {renderActionButtons()}
+              </motion.div>
+            )}
+
+            {searchState === "results" && (
+              <motion.div
+                key="results"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="flex flex-col gap-6"
+              >
+                {/* Unsatisfied state actions - subtle and compact */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  {renderActionButtons(true)}
+                </motion.div>
+
+                <h3 className="text-lg font-semibold text-gray-800 pt-2 border-b border-gray-200 pb-2">
+                  Search Results
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {DUMMY_RESULTS.map((result, i) => (
+                    <motion.div
+                      key={result.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.1 }}
+                      whileHover={{ y: -4 }}
+                      className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm hover:shadow-lg transition-all cursor-pointer group relative overflow-hidden flex flex-col"
+                    >
+                      {/* Animated left accent border */}
+                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#d52b1e] scale-y-0 group-hover:scale-y-100 transition-transform origin-top duration-300"></div>
+
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="text-lg font-bold text-[#d52b1e] group-hover:text-red-700 transition-colors">
+                          {result.title}
+                        </h4>
+                        <ChevronRight
+                          size={18}
+                          className="text-gray-400 group-hover:text-[#d52b1e] group-hover:translate-x-1 transition-all"
+                        />
+                      </div>
+                      <p className="text-gray-600 text-sm line-clamp-2 mt-1">
+                        {result.description}
+                      </p>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+
+      {/* Simple Footer */}
+      <footer className="bg-white border-t border-gray-200 py-6 px-8 text-center text-sm text-gray-500 mt-auto">
+        &copy; {new Date().getFullYear()} Eli Lilly and Company. All rights
+        reserved.
+      </footer>
+    </div>
+  );
+};
+
+export default Home;
 </file>
 
 <file path="src/components/chat/Chatbot.jsx">
@@ -358,7 +1106,7 @@ const Chatbot = () => {
                       <Menu size={20} />
                     </button>
                     <MessageSquare size={20} />
-                    <h3 className="font-semibold">EDB Assistant</h3>
+                    <h3 className="font-semibold">Resource Assistant</h3>
                   </div>
                   <button
                     onClick={() => setIsOpen(false)}
@@ -520,24 +1268,6 @@ const Chatbot = () => {
 };
 
 export default Chatbot;
-</file>
-
-<file path="src/components/layout/MainLayout.jsx">
-import React from 'react';
-import Sidebar from './Sidebar';
-
-const MainLayout = ({ children }) => {
-  return (
-    <div className="flex h-screen w-full overflow-hidden bg-white">
-      <Sidebar />
-      <main className="flex-1 overflow-y-auto">
-        {children}
-      </main>
-    </div>
-  );
-};
-
-export default MainLayout;
 </file>
 
 <file path="src/components/layout/Sidebar.jsx">
@@ -803,347 +1533,6 @@ const Sidebar = () => {
 };
 
 export default Sidebar;
-</file>
-
-<file path="src/components/ui/Toast.jsx">
-import React, { useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, XCircle, X } from 'lucide-react';
-
-const Toast = ({ message, type = 'success', onClose, duration = 3000 }) => {
-  useEffect(() => {
-    if (duration > 0) {
-      const timer = setTimeout(() => {
-        onClose();
-      }, duration);
-      return () => clearTimeout(timer);
-    }
-  }, [duration, onClose]);
-
-  return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0, y: 50, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 20, scale: 0.95 }}
-        className="fixed bottom-6 right-6 z-50 min-w-[300px] bg-white border border-gray-200 rounded-lg shadow-xl p-4 flex items-start gap-3"
-      >
-        {type === 'success' ? (
-          <CheckCircle2 className="text-green-500 flex-shrink-0 mt-0.5" size={20} />
-        ) : (
-          <XCircle className="text-red-500 flex-shrink-0 mt-0.5" size={20} />
-        )}
-        <div className="flex-1">
-          <p className="text-sm font-medium text-gray-900">{message}</p>
-        </div>
-        <button
-          onClick={onClose}
-          className="text-gray-400 hover:text-gray-600 transition-colors"
-        >
-          <X size={16} />
-        </button>
-      </motion.div>
-    </AnimatePresence>
-  );
-};
-
-export default Toast;
-</file>
-
-<file path="src/data/mockResources.js">
-export const mockResources = [
-  { id: 1, title: "Enterprise Data Strategy 2026", type: "Document", link: "#" },
-  { id: 2, title: "Data Catalog User Guide", type: "PDF", link: "#" },
-  { id: 3, title: "API Reference for Analytics", type: "Documentation", link: "#" },
-  { id: 4, title: "Metadata Manager Onboarding", type: "Video", link: "#" },
-];
-</file>
-
-<file path="src/main.jsx">
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.jsx'
-
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
-</file>
-
-<file path="src/pages/DemoPage.jsx">
-import React from 'react';
-import { Sparkles } from 'lucide-react';
-
-const DemoPage = () => {
-  return (
-    <div className="flex flex-col min-h-full bg-gray-50">
-      <div className="bg-white border-b border-gray-200 px-8 py-6">
-        <h1 className="text-3xl font-bold text-gray-800">Demo Page</h1>
-        <p className="text-gray-500 mt-2">This is a proof-of-concept page to demonstrate routing and layout.</p>
-      </div>
-      
-      <div className="p-8 flex-1 flex flex-col items-center justify-center">
-        <div className="bg-white p-12 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center max-w-md">
-          <div className="w-16 h-16 bg-red-50 text-[#d52b1e] rounded-full flex items-center justify-center mb-6">
-            <Sparkles size={32} />
-          </div>
-          <h2 className="text-xl font-bold text-gray-800 mb-2">You found the demo page!</h2>
-          <p className="text-gray-500 mb-6">
-            This area could be populated with forms, data tables, dashboards, or any other enterprise feature required.
-          </p>
-          <button className="bg-[#d52b1e] hover:bg-red-700 text-white font-medium py-2 px-6 rounded-md transition-colors shadow-sm">
-            Explore Features
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default DemoPage;
-</file>
-
-<file path="src/pages/Home.jsx">
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { Search, X, Box, Database, Bot, ChevronRight } from "lucide-react";
-
-const DUMMY_RESULTS = [
-  {
-    id: 1,
-    title: "PR review EDB",
-    description:
-      "Standard operating procedure for performing PR reviews on Enterprise Data components.",
-  },
-  {
-    id: 2,
-    title: "EDB core components",
-    description:
-      "Documentation and repository links for the core foundational elements of the Enterprise Database.",
-  },
-];
-
-const Home = () => {
-  const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchState, setSearchState] = useState("idle"); // 'idle', 'results', 'no-results'
-
-  const handleSearch = () => {
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) {
-      setSearchState("idle");
-      return;
-    }
-
-    // Dummy matching logic
-    if (
-      q.includes("pr") ||
-      q.includes("review") ||
-      q.includes("edb") ||
-      q.includes("component")
-    ) {
-      setSearchState("results");
-    } else {
-      setSearchState("no-results");
-    }
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter") {
-      handleSearch();
-    }
-  };
-
-  const openChatbot = () => {
-    // Custom event to trigger chatbot from anywhere
-    window.dispatchEvent(new Event("toggle-chatbot"));
-  };
-
-  const renderActionButtons = (compact = false) => (
-    <div
-      className={`flex gap-4 ${compact ? "justify-center z-10 relative -mb-4" : "justify-center w-full"}`}
-    >
-      <button
-        onClick={() => navigate("/data-ingestion")}
-        className="flex items-center gap-2 bg-white border border-gray-200 shadow-sm hover:shadow-md hover:border-[#d52b1e] text-gray-800 px-5 py-3 rounded-lg font-medium transition-all group"
-      >
-        <Database
-          size={18}
-          className="text-[#d52b1e] group-hover:scale-110 transition-transform"
-        />
-        Start data ingestion
-      </button>
-      <button
-        onClick={openChatbot}
-        className="flex items-center gap-2 bg-white border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-500 text-gray-800 px-5 py-3 rounded-lg font-medium transition-all group"
-      >
-        <Bot
-          size={18}
-          className="text-blue-500 group-hover:scale-110 transition-transform"
-        />
-        Can't find it? Try AI search
-      </button>
-    </div>
-  );
-
-  return (
-    <div className="flex flex-col min-h-full bg-white">
-      {/* Hero Section */}
-      <div className="bg-[#d52b1e] w-full px-8 py-12 flex flex-col items-center justify-center relative">
-        <div className="w-full max-w-5xl z-10">
-          <h1 className="text-white text-5xl font-bold mb-4 tracking-tight">
-            Welcome to <span className="font-extrabold">Enterprise Data</span>
-          </h1>
-          <p className="text-white text-lg font-medium mb-10 tracking-wide opacity-90">
-            A Catalogue of technical products, to assist you in achieving your
-            goals.
-          </p>
-
-          {/* Search Bar Container */}
-          <div className="flex gap-4 w-full">
-            <div className="relative flex-1 flex items-center">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Start browsing our Marketplace for products..."
-                className="w-full bg-white text-gray-800 rounded-md py-4 pl-6 pr-12 text-lg focus:outline-none focus:ring-2 focus:ring-white/50 shadow-lg"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => {
-                    setSearchQuery("");
-                    setSearchState("idle");
-                  }}
-                  className="absolute right-14 text-gray-400 hover:text-gray-600 p-2"
-                >
-                  <X size={20} />
-                </button>
-              )}
-              <button
-                onClick={handleSearch}
-                className="absolute right-2 bg-white text-gray-500 hover:text-gray-800 p-2 rounded-md transition-colors"
-              >
-                <Search size={24} />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Actions Section */}
-      <div className="w-full bg-gray-50 flex-1 py-12 px-8 flex justify-center relative">
-        <div className="w-full max-w-5xl flex flex-col gap-6">
-          <AnimatePresence mode="wait">
-            {searchState === "idle" && (
-              <motion.div
-                key="idle"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
-              >
-                {/* Action Card 1 */}
-                <button className="bg-white border border-gray-200 rounded-lg p-6 flex flex-col items-center justify-center text-center gap-4 hover:shadow-md transition-all group">
-                  <Box
-                    size={32}
-                    className="text-[#d52b1e] group-hover:scale-110 transition-transform"
-                  />
-                  <span className="font-medium text-gray-800 text-sm">
-                    Your Favourites
-                  </span>
-                </button>
-              </motion.div>
-            )}
-
-            {searchState === "no-results" && (
-              <motion.div
-                key="no-results"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="flex flex-col items-center justify-center py-8 gap-8"
-              >
-                <div className="text-center">
-                  <h3 className="text-xl font-semibold text-gray-800">
-                    No matching products found
-                  </h3>
-                  <p className="text-gray-500 mt-2">
-                    Try adjusting your search terms or explore these options.
-                  </p>
-                </div>
-                {renderActionButtons()}
-              </motion.div>
-            )}
-
-            {searchState === "results" && (
-              <motion.div
-                key="results"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="flex flex-col gap-6"
-              >
-                {/* Unsatisfied state actions - subtle and compact */}
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.3 }}
-                >
-                  {renderActionButtons(true)}
-                </motion.div>
-
-                <h3 className="text-lg font-semibold text-gray-800 pt-2 border-b border-gray-200 pb-2">
-                  Search Results
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {DUMMY_RESULTS.map((result, i) => (
-                    <motion.div
-                      key={result.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.1 }}
-                      whileHover={{ y: -4 }}
-                      className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm hover:shadow-lg transition-all cursor-pointer group relative overflow-hidden flex flex-col"
-                    >
-                      {/* Animated left accent border */}
-                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#d52b1e] scale-y-0 group-hover:scale-y-100 transition-transform origin-top duration-300"></div>
-
-                      <div className="flex justify-between items-start mb-2">
-                        <h4 className="text-lg font-bold text-[#d52b1e] group-hover:text-red-700 transition-colors">
-                          {result.title}
-                        </h4>
-                        <ChevronRight
-                          size={18}
-                          className="text-gray-400 group-hover:text-[#d52b1e] group-hover:translate-x-1 transition-all"
-                        />
-                      </div>
-                      <p className="text-gray-600 text-sm line-clamp-2 mt-1">
-                        {result.description}
-                      </p>
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
-
-      {/* Simple Footer */}
-      <footer className="bg-white border-t border-gray-200 py-6 px-8 text-center text-sm text-gray-500 mt-auto">
-        &copy; {new Date().getFullYear()} Eli Lilly and Company. All rights
-        reserved.
-      </footer>
-    </div>
-  );
-};
-
-export default Home;
 </file>
 
 <file path="src/pages/MyIngestionStatus.jsx">
@@ -1816,6 +2205,9 @@ import {
   Type,
   ChevronDown,
   CheckCircle2,
+  Loader2,
+  Copy,
+  ExternalLink,
 } from "lucide-react";
 import Toast from "../components/ui/Toast";
 
@@ -1867,6 +2259,9 @@ const StartDataIngestion = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [formatSearch, setFormatSearch] = useState("");
   const [level1BusinessAreaOption, setLevel1BusinessAreaOption] = useState("");
+  const [isCreatingRepo, setIsCreatingRepo] = useState(false);
+  const [repoStatus, setRepoStatus] = useState(null);
+  const [repoData, setRepoData] = useState(null);
 
   const filteredFormats = FORMAT_OPTIONS.filter((format) =>
     format.toLowerCase().includes(formatSearch.toLowerCase()),
@@ -1957,49 +2352,72 @@ const StartDataIngestion = () => {
     setCurrentStage(4);
   };
 
-  const handleFinalSubmit = (e) => {
+  const handleFinalSubmit = async (e) => {
     e.preventDefault();
-    // Save to localStorage
-    const existing = JSON.parse(localStorage.getItem("ingestions") || "[]");
-    const newSubmission = {
-      ...formData,
-      id: `ING-${Math.floor(1000 + Math.random() * 9000)}`,
-      date: new Date().toISOString().split("T")[0],
-      currentStage: "approval",
-    };
-    localStorage.setItem(
-      "ingestions",
-      JSON.stringify([...existing, newSubmission]),
-    );
+    setIsCreatingRepo(true);
+    setRepoStatus(null);
 
-    setShowToast(true);
-    setTimeout(() => {
-      // Reset form
-      setFormData({
-        dataName: "",
-        dataDescription: "",
-        dataFormat: "",
-        sourceLink: "",
-        businessArea: "",
-        appName: "",
-        costCenter: "",
-        costCenterApprover: "",
-        systemOwner: "",
-        systemCustodian: "",
-        primaryItContact: "",
-        level1BusinessArea: "",
-        projectCenter: "",
-        dataClassification: "",
-        hipaa: "",
-        sourceGitRepo: "",
-        approverGroup: "",
-        applicationCi: "",
-        publishToMarketplace: "Yes",
-      });
-      setLevel1BusinessAreaOption("");
-      setCurrentStage(1);
-      navigate("/my-ingestion");
-    }, 2000);
+    try {
+      const response = await fetch(
+        "http://localhost:8080/api/github/create-repo",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ formData }),
+        },
+      );
+
+      const data = await response.json();
+      if (!response.ok)
+        throw new Error(data.error || "Failed to start creation");
+
+      const { jobId } = data;
+
+      const pollInterval = setInterval(async () => {
+        try {
+          const statusRes = await fetch(
+            `http://localhost:8080/api/github/status/${jobId}`,
+          );
+          const statusData = await statusRes.json();
+
+          if (statusData.status === "success") {
+            clearInterval(pollInterval);
+            setIsCreatingRepo(false);
+            setRepoStatus("success");
+            setRepoData(statusData);
+
+            const existing = JSON.parse(
+              localStorage.getItem("ingestions") || "[]",
+            );
+            const newSubmission = {
+              ...formData,
+              id: `ING-${Math.floor(1000 + Math.random() * 9000)}`,
+              date: new Date().toISOString().split("T")[0],
+              currentStage: "approval",
+              repoUrl: statusData.url,
+            };
+            localStorage.setItem(
+              "ingestions",
+              JSON.stringify([...existing, newSubmission]),
+            );
+          } else if (statusData.status === "error") {
+            clearInterval(pollInterval);
+            setIsCreatingRepo(false);
+            setRepoStatus("error");
+            setShowToast(true);
+          }
+        } catch (pollErr) {
+          console.error("Polling error", pollErr);
+        }
+      }, 2000);
+    } catch (err) {
+      console.error(err);
+      setIsCreatingRepo(false);
+      setRepoStatus("error");
+      setShowToast(true);
+    }
   };
 
   const handleInputChange = (field, value) => {
@@ -2117,10 +2535,100 @@ const StartDataIngestion = () => {
     <div className="min-h-full bg-gray-50 flex flex-col items-center py-12 px-4 sm:px-6 lg:px-8">
       {showToast && (
         <Toast
-          message="Data ingestion submitted successfully!"
-          type="success"
+          message={
+            repoStatus === "error"
+              ? "Error creating repository!"
+              : "Data ingestion submitted successfully!"
+          }
+          type={repoStatus === "error" ? "error" : "success"}
           onClose={() => setShowToast(false)}
         />
+      )}
+
+      {repoStatus === "success" && repoData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all">
+            <div className="bg-green-500 p-6 text-center">
+              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner">
+                {/* <Github size={32} className="text-green-600" /> */}
+              </div>
+              <h2 className="text-2xl font-bold text-white">Success!</h2>
+              <p className="text-green-50 mt-1">
+                Repository created successfully
+              </p>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <p className="text-gray-600 text-sm text-center">
+                Your new repository is ready. You can now start adding your data
+                and code.
+              </p>
+
+              <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                  Repository URL
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={repoData.url}
+                    className="bg-white border border-gray-300 text-gray-800 text-sm rounded-md block w-full p-2.5 focus:ring-green-500 focus:border-green-500"
+                  />
+                  <button
+                    onClick={() => navigator.clipboard.writeText(repoData.url)}
+                    className="p-2.5 bg-gray-100 border border-gray-300 rounded-md text-gray-600 hover:bg-gray-200 hover:text-gray-900 transition-colors"
+                    title="Copy to clipboard"
+                  >
+                    <Copy size={18} />
+                  </button>
+                  <a
+                    href={repoData.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2.5 bg-green-50 border border-green-200 rounded-md text-green-600 hover:bg-green-100 hover:text-green-700 transition-colors"
+                    title="Open in new tab"
+                  >
+                    <ExternalLink size={18} />
+                  </a>
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  setRepoStatus(null);
+                  setFormData({
+                    dataName: "",
+                    dataDescription: "",
+                    dataFormat: "",
+                    sourceLink: "",
+                    businessArea: "",
+                    appName: "",
+                    costCenter: "",
+                    costCenterApprover: "",
+                    systemOwner: "",
+                    systemCustodian: "",
+                    primaryItContact: "",
+                    level1BusinessArea: "",
+                    projectCenter: "",
+                    dataClassification: "",
+                    hipaa: "",
+                    sourceGitRepo: "",
+                    approverGroup: "",
+                    applicationCi: "",
+                    publishToMarketplace: "Yes",
+                  });
+                  setLevel1BusinessAreaOption("");
+                  setCurrentStage(1);
+                  navigate("/my-ingestion");
+                }}
+                className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 px-4 rounded-lg transition-colors focus:ring-4 focus:ring-green-300"
+              >
+                Continue to Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <div className="w-full max-w-3xl bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden mb-8">
@@ -2679,9 +3187,17 @@ const StartDataIngestion = () => {
               </button>
               <button
                 type="submit"
-                className="cursor-pointer px-8 py-2 text-sm font-bold text-white bg-[#d52b1e] border border-transparent rounded-md shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#d52b1e] transition-colors"
+                disabled={isCreatingRepo}
+                className="cursor-pointer flex items-center justify-center min-w-[140px] px-8 py-2 text-sm font-bold text-white bg-[#d52b1e] border border-transparent rounded-md shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#d52b1e] transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                Final Submit
+                {isCreatingRepo ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin mr-2" />
+                    Creating Repo...
+                  </>
+                ) : (
+                  "Final Submit"
+                )}
               </button>
             </div>
           </form>
@@ -2692,195 +3208,6 @@ const StartDataIngestion = () => {
 };
 
 export default StartDataIngestion;
-</file>
-
-<file path="src/pages/Tickets.jsx">
-import React, { useState } from 'react';
-import { Ticket, Search, Filter, Plus, Clock, CheckCircle2, AlertCircle, MoreHorizontal } from 'lucide-react';
-
-const DUMMY_TICKETS = [
-  {
-    id: 'TKT-1042',
-    title: 'Access Request: Sales Q3 Data',
-    type: 'Access',
-    status: 'Open',
-    priority: 'High',
-    assignee: 'Data Gov Team',
-    date: '2026-04-28',
-  },
-  {
-    id: 'TKT-1041',
-    title: 'Ingestion Pipeline Failure: Marketing Assets',
-    type: 'Bug',
-    status: 'In Progress',
-    priority: 'Critical',
-    assignee: 'Data Eng Team',
-    date: '2026-04-27',
-  },
-  {
-    id: 'TKT-1038',
-    title: 'Marketplace Publish Review',
-    type: 'Review',
-    status: 'Resolved',
-    priority: 'Medium',
-    assignee: 'Compliance',
-    date: '2026-04-25',
-  },
-  {
-    id: 'TKT-1035',
-    title: 'Update Data Classification for Patient Demographics',
-    type: 'Request',
-    status: 'Closed',
-    priority: 'Low',
-    assignee: 'Security',
-    date: '2026-04-20',
-  }
-];
-
-const Tickets = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All');
-
-  const filteredTickets = DUMMY_TICKETS.filter(ticket => {
-    const matchesSearch = ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) || ticket.id.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'All' || ticket.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'Open': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'In Progress': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'Resolved': return 'bg-green-100 text-green-800 border-green-200';
-      case 'Closed': return 'bg-gray-100 text-gray-800 border-gray-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  const getPriorityIcon = (priority) => {
-    switch (priority) {
-      case 'Critical': return <AlertCircle size={14} className="text-red-500" />;
-      case 'High': return <AlertCircle size={14} className="text-orange-500" />;
-      case 'Medium': return <Clock size={14} className="text-yellow-500" />;
-      case 'Low': return <CheckCircle2 size={14} className="text-green-500" />;
-      default: return null;
-    }
-  };
-
-  return (
-    <div className="min-h-full bg-gray-50 flex flex-col py-10 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto w-full">
-        {/* Header Section */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
-              <Ticket className="text-[#d52b1e]" size={24} />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">My Tickets</h1>
-              <p className="text-gray-500 text-sm">Manage your support and request tickets</p>
-            </div>
-          </div>
-          <button className="flex items-center gap-2 bg-[#d52b1e] hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors shadow-sm">
-            <Plus size={16} />
-            Create Ticket
-          </button>
-        </div>
-
-        {/* Filters & Search */}
-        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6 flex flex-col sm:flex-row gap-4 justify-between items-center">
-          <div className="relative w-full sm:w-96">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-            <input
-              type="text"
-              placeholder="Search by ID or title..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#d52b1e] focus:border-transparent outline-none text-sm"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <Filter size={18} className="text-gray-400" />
-            <select
-              className="w-full sm:w-auto border border-gray-300 rounded-md py-2 pl-3 pr-8 focus:ring-2 focus:ring-[#d52b1e] focus:border-transparent outline-none text-sm text-gray-700"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <option value="All">All Statuses</option>
-              <option value="Open">Open</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Resolved">Resolved</option>
-              <option value="Closed">Closed</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Tickets Table */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200 text-xs uppercase tracking-wider text-gray-500 font-semibold">
-                  <th className="p-4 pl-6">Ticket</th>
-                  <th className="p-4">Type</th>
-                  <th className="p-4">Status</th>
-                  <th className="p-4">Priority</th>
-                  <th className="p-4 hidden md:table-cell">Assignee</th>
-                  <th className="p-4 hidden sm:table-cell">Date</th>
-                  <th className="p-4 text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {filteredTickets.map((ticket) => (
-                  <tr key={ticket.id} className="hover:bg-gray-50 transition-colors group">
-                    <td className="p-4 pl-6">
-                      <div className="font-medium text-gray-900 group-hover:text-[#d52b1e] transition-colors cursor-pointer">
-                        {ticket.title}
-                      </div>
-                      <div className="text-xs text-gray-500 mt-0.5">{ticket.id}</div>
-                    </td>
-                    <td className="p-4">
-                      <span className="text-sm text-gray-700">{ticket.type}</span>
-                    </td>
-                    <td className="p-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(ticket.status)}`}>
-                        {ticket.status}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <div className="flex items-center gap-1.5 text-sm text-gray-700">
-                        {getPriorityIcon(ticket.priority)}
-                        {ticket.priority}
-                      </div>
-                    </td>
-                    <td className="p-4 hidden md:table-cell text-sm text-gray-600">
-                      {ticket.assignee}
-                    </td>
-                    <td className="p-4 hidden sm:table-cell text-sm text-gray-500">
-                      {ticket.date}
-                    </td>
-                    <td className="p-4 text-center">
-                      <button className="text-gray-400 hover:text-gray-700 transition-colors p-1 rounded-md hover:bg-gray-100">
-                        <MoreHorizontal size={18} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {filteredTickets.length === 0 && (
-            <div className="p-12 text-center text-gray-500">
-              No tickets found matching your criteria.
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default Tickets;
 </file>
 
 </files>

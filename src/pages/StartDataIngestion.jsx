@@ -64,6 +64,7 @@ const StartDataIngestion = () => {
   const [isCreatingRepo, setIsCreatingRepo] = useState(false);
   const [repoStatus, setRepoStatus] = useState(null);
   const [repoData, setRepoData] = useState(null);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const filteredFormats = FORMAT_OPTIONS.filter((format) =>
     format.toLowerCase().includes(formatSearch.toLowerCase()),
@@ -167,7 +168,7 @@ const StartDataIngestion = () => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ formData }),
+          body: JSON.stringify(formData),
         },
       );
 
@@ -208,6 +209,7 @@ const StartDataIngestion = () => {
             clearInterval(pollInterval);
             setIsCreatingRepo(false);
             setRepoStatus("error");
+            setErrorMessage(statusData.message || "Error creating repository");
             setShowToast(true);
           }
         } catch (pollErr) {
@@ -218,6 +220,7 @@ const StartDataIngestion = () => {
       console.error(err);
       setIsCreatingRepo(false);
       setRepoStatus("error");
+      setErrorMessage(err.message || "Error creating repository");
       setShowToast(true);
     }
   };
@@ -339,7 +342,7 @@ const StartDataIngestion = () => {
         <Toast
           message={
             repoStatus === "error"
-              ? "Error creating repository!"
+              ? errorMessage || "Error creating repository!"
               : "Data ingestion submitted successfully!"
           }
           type={repoStatus === "error" ? "error" : "success"}
@@ -995,7 +998,7 @@ const StartDataIngestion = () => {
                 {isCreatingRepo ? (
                   <>
                     <Loader2 size={16} className="animate-spin mr-2" />
-                    Creating Repo...
+                    Creating repository...
                   </>
                 ) : (
                   "Final Submit"
