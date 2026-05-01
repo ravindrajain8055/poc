@@ -265,7 +265,7 @@ const Chatbot = () => {
                       <Menu size={20} />
                     </button>
                     <MessageSquare size={20} />
-                    <h3 className="font-semibold">EDB Assistant</h3>
+                    <h3 className="font-semibold">Resource Assistant</h3>
                   </div>
                   <button
                     onClick={() => setIsOpen(false)}
