@@ -58,544 +58,6 @@ src/pages/Tickets.jsx
 <files>
 This section contains the contents of the repository's files.
 
-<file path="src/components/layout/MainLayout.jsx">
-import React from 'react';
-import Sidebar from './Sidebar';
-
-const MainLayout = ({ children }) => {
-  return (
-    <div className="flex h-screen w-full overflow-hidden bg-white">
-      <Sidebar />
-      <main className="flex-1 overflow-y-auto">
-        {children}
-      </main>
-    </div>
-  );
-};
-
-export default MainLayout;
-</file>
-
-<file path="src/components/ui/Toast.jsx">
-import React, { useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, XCircle, X } from 'lucide-react';
-
-const Toast = ({ message, type = 'success', onClose, duration = 3000 }) => {
-  useEffect(() => {
-    if (duration > 0) {
-      const timer = setTimeout(() => {
-        onClose();
-      }, duration);
-      return () => clearTimeout(timer);
-    }
-  }, [duration, onClose]);
-
-  return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0, y: 50, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 20, scale: 0.95 }}
-        className="fixed bottom-6 right-6 z-50 min-w-[300px] bg-white border border-gray-200 rounded-lg shadow-xl p-4 flex items-start gap-3"
-      >
-        {type === 'success' ? (
-          <CheckCircle2 className="text-green-500 flex-shrink-0 mt-0.5" size={20} />
-        ) : (
-          <XCircle className="text-red-500 flex-shrink-0 mt-0.5" size={20} />
-        )}
-        <div className="flex-1">
-          <p className="text-sm font-medium text-gray-900">{message}</p>
-        </div>
-        <button
-          onClick={onClose}
-          className="text-gray-400 hover:text-gray-600 transition-colors"
-        >
-          <X size={16} />
-        </button>
-      </motion.div>
-    </AnimatePresence>
-  );
-};
-
-export default Toast;
-</file>
-
-<file path="src/data/mockResources.js">
-export const mockResources = [
-  { id: 1, title: "Enterprise Data Strategy 2026", type: "Document", link: "#" },
-  { id: 2, title: "Data Catalog User Guide", type: "PDF", link: "#" },
-  { id: 3, title: "API Reference for Analytics", type: "Documentation", link: "#" },
-  { id: 4, title: "Metadata Manager Onboarding", type: "Video", link: "#" },
-];
-</file>
-
-<file path="src/main.jsx">
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.jsx'
-
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
-</file>
-
-<file path="src/pages/DemoPage.jsx">
-import React from 'react';
-import { Sparkles } from 'lucide-react';
-
-const DemoPage = () => {
-  return (
-    <div className="flex flex-col min-h-full bg-gray-50">
-      <div className="bg-white border-b border-gray-200 px-8 py-6">
-        <h1 className="text-3xl font-bold text-gray-800">Demo Page</h1>
-        <p className="text-gray-500 mt-2">This is a proof-of-concept page to demonstrate routing and layout.</p>
-      </div>
-      
-      <div className="p-8 flex-1 flex flex-col items-center justify-center">
-        <div className="bg-white p-12 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center max-w-md">
-          <div className="w-16 h-16 bg-red-50 text-[#d52b1e] rounded-full flex items-center justify-center mb-6">
-            <Sparkles size={32} />
-          </div>
-          <h2 className="text-xl font-bold text-gray-800 mb-2">You found the demo page!</h2>
-          <p className="text-gray-500 mb-6">
-            This area could be populated with forms, data tables, dashboards, or any other enterprise feature required.
-          </p>
-          <button className="bg-[#d52b1e] hover:bg-red-700 text-white font-medium py-2 px-6 rounded-md transition-colors shadow-sm">
-            Explore Features
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default DemoPage;
-</file>
-
-<file path="src/pages/Tickets.jsx">
-import React, { useState } from 'react';
-import { Ticket, Search, Filter, Plus, Clock, CheckCircle2, AlertCircle, MoreHorizontal } from 'lucide-react';
-
-const DUMMY_TICKETS = [
-  {
-    id: 'TKT-1042',
-    title: 'Access Request: Sales Q3 Data',
-    type: 'Access',
-    status: 'Open',
-    priority: 'High',
-    assignee: 'Data Gov Team',
-    date: '2026-04-28',
-  },
-  {
-    id: 'TKT-1041',
-    title: 'Ingestion Pipeline Failure: Marketing Assets',
-    type: 'Bug',
-    status: 'In Progress',
-    priority: 'Critical',
-    assignee: 'Data Eng Team',
-    date: '2026-04-27',
-  },
-  {
-    id: 'TKT-1038',
-    title: 'Marketplace Publish Review',
-    type: 'Review',
-    status: 'Resolved',
-    priority: 'Medium',
-    assignee: 'Compliance',
-    date: '2026-04-25',
-  },
-  {
-    id: 'TKT-1035',
-    title: 'Update Data Classification for Patient Demographics',
-    type: 'Request',
-    status: 'Closed',
-    priority: 'Low',
-    assignee: 'Security',
-    date: '2026-04-20',
-  }
-];
-
-const Tickets = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All');
-
-  const filteredTickets = DUMMY_TICKETS.filter(ticket => {
-    const matchesSearch = ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) || ticket.id.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'All' || ticket.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'Open': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'In Progress': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'Resolved': return 'bg-green-100 text-green-800 border-green-200';
-      case 'Closed': return 'bg-gray-100 text-gray-800 border-gray-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  const getPriorityIcon = (priority) => {
-    switch (priority) {
-      case 'Critical': return <AlertCircle size={14} className="text-red-500" />;
-      case 'High': return <AlertCircle size={14} className="text-orange-500" />;
-      case 'Medium': return <Clock size={14} className="text-yellow-500" />;
-      case 'Low': return <CheckCircle2 size={14} className="text-green-500" />;
-      default: return null;
-    }
-  };
-
-  return (
-    <div className="min-h-full bg-gray-50 flex flex-col py-10 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto w-full">
-        {/* Header Section */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
-              <Ticket className="text-[#d52b1e]" size={24} />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">My Tickets</h1>
-              <p className="text-gray-500 text-sm">Manage your support and request tickets</p>
-            </div>
-          </div>
-          <button className="flex items-center gap-2 bg-[#d52b1e] hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors shadow-sm">
-            <Plus size={16} />
-            Create Ticket
-          </button>
-        </div>
-
-        {/* Filters & Search */}
-        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6 flex flex-col sm:flex-row gap-4 justify-between items-center">
-          <div className="relative w-full sm:w-96">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-            <input
-              type="text"
-              placeholder="Search by ID or title..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#d52b1e] focus:border-transparent outline-none text-sm"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <Filter size={18} className="text-gray-400" />
-            <select
-              className="w-full sm:w-auto border border-gray-300 rounded-md py-2 pl-3 pr-8 focus:ring-2 focus:ring-[#d52b1e] focus:border-transparent outline-none text-sm text-gray-700"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <option value="All">All Statuses</option>
-              <option value="Open">Open</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Resolved">Resolved</option>
-              <option value="Closed">Closed</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Tickets Table */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200 text-xs uppercase tracking-wider text-gray-500 font-semibold">
-                  <th className="p-4 pl-6">Ticket</th>
-                  <th className="p-4">Type</th>
-                  <th className="p-4">Status</th>
-                  <th className="p-4">Priority</th>
-                  <th className="p-4 hidden md:table-cell">Assignee</th>
-                  <th className="p-4 hidden sm:table-cell">Date</th>
-                  <th className="p-4 text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {filteredTickets.map((ticket) => (
-                  <tr key={ticket.id} className="hover:bg-gray-50 transition-colors group">
-                    <td className="p-4 pl-6">
-                      <div className="font-medium text-gray-900 group-hover:text-[#d52b1e] transition-colors cursor-pointer">
-                        {ticket.title}
-                      </div>
-                      <div className="text-xs text-gray-500 mt-0.5">{ticket.id}</div>
-                    </td>
-                    <td className="p-4">
-                      <span className="text-sm text-gray-700">{ticket.type}</span>
-                    </td>
-                    <td className="p-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(ticket.status)}`}>
-                        {ticket.status}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <div className="flex items-center gap-1.5 text-sm text-gray-700">
-                        {getPriorityIcon(ticket.priority)}
-                        {ticket.priority}
-                      </div>
-                    </td>
-                    <td className="p-4 hidden md:table-cell text-sm text-gray-600">
-                      {ticket.assignee}
-                    </td>
-                    <td className="p-4 hidden sm:table-cell text-sm text-gray-500">
-                      {ticket.date}
-                    </td>
-                    <td className="p-4 text-center">
-                      <button className="text-gray-400 hover:text-gray-700 transition-colors p-1 rounded-md hover:bg-gray-100">
-                        <MoreHorizontal size={18} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {filteredTickets.length === 0 && (
-            <div className="p-12 text-center text-gray-500">
-              No tickets found matching your criteria.
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default Tickets;
-</file>
-
-<file path="src/components/chat/Chatbot.jsx">
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, X, Send, FileText, Database } from 'lucide-react';
-import { mockResources } from '../../data/mockResources';
-
-const Chatbot = () => {
-  const navigate = useNavigate();
-  const [isOpen, setIsOpen] = useState(true);
-  const [query, setQuery] = useState('');
-  const [searchedQuery, setSearchedQuery] = useState('');
-  const [results, setResults] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
-
-  // Listen for external toggle events
-  useEffect(() => {
-    const handleToggle = () => setIsOpen(true);
-    window.addEventListener('toggle-chatbot', handleToggle);
-    return () => window.removeEventListener('toggle-chatbot', handleToggle);
-  }, []);
-
-  const handleSearch = () => {
-    const q = query.trim();
-    if (!q) return;
-
-    setSearchedQuery(q);
-    setIsSearching(true);
-    setHasSearched(true);
-    
-    // Simulate API Call delay
-    // TODO: [LLM_INTEGRATION] Replace this mock implementation and fallback logic with actual backend API/LLM call.
-    /*
-      Example backend integration:
-      fetch(`/api/search/ai?q=${encodeURIComponent(q)}`)
-        .then(res => res.json())
-        .then(data => { setResults(data.resources); setIsSearching(false); })
-    */
-    setTimeout(() => {
-      const lowerQuery = q.toLowerCase();
-      const filtered = mockResources.filter(resource => 
-        resource.title.toLowerCase().includes(lowerQuery) || 
-        resource.type.toLowerCase().includes(lowerQuery)
-      );
-      setResults(filtered);
-      setIsSearching(false);
-      setQuery(''); // clear input after search
-    }, 600);
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      handleSearch();
-    }
-  };
-
-  const handleNavigateToIngestion = () => {
-    setIsOpen(false);
-    navigate('/data-ingestion', { 
-      state: { 
-        prefillDataName: searchedQuery,
-        prefillDataDescription: `Generated from search query: ${searchedQuery}`
-      } 
-    });
-  };
-
-  return (
-    <>
-      {/* Chat Window */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.9 }}
-            transition={{ duration: 0.2 }}
-            className="fixed bottom-24 right-6 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col z-50"
-            style={{ height: '520px' }}
-          >
-            {/* Header */}
-            <div className="bg-[#d52b1e] p-4 text-white flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <MessageSquare size={20} />
-                <h3 className="font-semibold">Resource Assistant</h3>
-              </div>
-              <button 
-                onClick={() => setIsOpen(false)}
-                className="text-white hover:bg-white/20 p-1 rounded-md transition-colors"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* Chat Body */}
-            <div className="flex-1 overflow-y-auto p-4 bg-gray-50 flex flex-col gap-5">
-              {/* Initial message */}
-              <div className="flex gap-2">
-                <div className="w-8 h-8 rounded-full bg-[#d52b1e] flex items-center justify-center text-white flex-shrink-0 mt-1">
-                  <MessageSquare size={16} />
-                </div>
-                <div className="bg-white p-3 rounded-2xl rounded-tl-sm border border-gray-100 shadow-sm text-sm text-gray-700">
-                  Hi! I can help you find resources and documents. What are you looking for today?
-                </div>
-              </div>
-
-              {/* User search query bubble */}
-              {hasSearched && searchedQuery && (
-                <div className="flex gap-2 justify-end">
-                  <div className="bg-[#d52b1e] p-3 rounded-2xl rounded-tr-sm shadow-sm text-sm text-white max-w-[80%] break-words">
-                    {searchedQuery}
-                  </div>
-                </div>
-              )}
-
-              {/* Loading Indicator */}
-              {isSearching && (
-                <div className="flex gap-2">
-                  <div className="w-8 h-8 rounded-full bg-[#d52b1e] flex items-center justify-center text-white flex-shrink-0 mt-1">
-                    <MessageSquare size={16} />
-                  </div>
-                  <div className="bg-white p-3 rounded-2xl rounded-tl-sm border border-gray-100 shadow-sm text-sm text-gray-500 italic flex gap-1">
-                    <span className="animate-bounce">.</span>
-                    <span className="animate-bounce delay-100">.</span>
-                    <span className="animate-bounce delay-200">.</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Results & Fallback */}
-              {!isSearching && hasSearched && (
-                results.length > 0 ? (
-                  <div className="flex gap-2">
-                    <div className="w-8 h-8 rounded-full bg-[#d52b1e] flex items-center justify-center text-white flex-shrink-0 mt-1">
-                      <MessageSquare size={16} />
-                    </div>
-                    <div className="bg-white p-3 rounded-2xl rounded-tl-sm border border-gray-100 shadow-sm w-full">
-                      <p className="text-sm text-gray-700 mb-2 font-medium">I found these resources:</p>
-                      <div className="space-y-2">
-                        {results.map((res) => (
-                          <a 
-                            key={res.id} 
-                            href={res.link}
-                            className="flex items-start gap-2 p-2 rounded-md hover:bg-gray-50 border border-gray-100 transition-colors"
-                          >
-                            <FileText size={16} className="text-[#d52b1e] mt-0.5 flex-shrink-0" />
-                            <div>
-                              <p className="text-sm font-medium text-gray-800 leading-tight">{res.title}</p>
-                              <p className="text-xs text-gray-500 mt-1">{res.type}</p>
-                            </div>
-                          </a>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex gap-2">
-                    <div className="w-8 h-8 rounded-full bg-[#d52b1e] flex items-center justify-center text-white flex-shrink-0 mt-1">
-                      <MessageSquare size={16} />
-                    </div>
-                    <div className="bg-white p-3 rounded-2xl rounded-tl-sm border border-gray-100 shadow-sm w-full">
-                      <p className="text-sm text-gray-700 mb-3">
-                        I couldn't find an exact match for your query. Based on your input, the <strong>File Ingestion Core Component</strong> seems most relevant.
-                      </p>
-                      <p className="text-sm text-gray-700 mb-4">
-                        Let me know if you'd like to proceed. I can redirect you to Data Ingestion to register this.
-                      </p>
-                      
-                      {/* CTA Button */}
-                      <button 
-                        onClick={handleNavigateToIngestion}
-                        className="w-full flex items-center justify-center gap-2 bg-[#d52b1e] hover:bg-red-700 text-white py-2 px-4 rounded-md font-medium transition-colors text-sm"
-                      >
-                        <Database size={16} />
-                        Start Data Ingestion
-                      </button>
-                    </div>
-                  </div>
-                )
-              )}
-            </div>
-
-            {/* Input Area */}
-            <div className="p-3 bg-white border-t border-gray-200">
-              <div className="relative flex items-center">
-                <input
-                  type="text"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Ask or search resources..."
-                  className="w-full pl-4 pr-10 py-3 rounded-full border border-gray-200 focus:outline-none focus:border-[#d52b1e] focus:ring-1 focus:ring-[#d52b1e] text-sm transition-all"
-                />
-                <button 
-                  className="absolute right-2 p-2 bg-[#d52b1e] text-white rounded-full hover:bg-red-700 transition-colors"
-                  onClick={handleSearch}
-                >
-                  <Send size={14} />
-                </button>
-              </div>
-              <div className="text-center mt-2">
-                <span className="text-[10px] text-gray-400">Powered by AI Search</span>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Floating Action Button */}
-      <AnimatePresence>
-        {!isOpen && (
-          <motion.button
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0, opacity: 0 }}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setIsOpen(true)}
-            className="fixed bottom-6 right-6 w-14 h-14 bg-[#d52b1e] rounded-full flex items-center justify-center text-white shadow-lg border-2 border-white/20 z-50 group"
-          >
-            <MessageSquare size={24} className="group-hover:animate-pulse" />
-          </motion.button>
-        )}
-      </AnimatePresence>
-    </>
-  );
-};
-
-export default Chatbot;
-</file>
-
 <file path="src/App.jsx">
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
@@ -628,50 +90,176 @@ function App() {
 export default App;
 </file>
 
-<file path="src/pages/Home.jsx">
-import React, { useState } from "react";
+<file path="src/components/chat/Chatbot.jsx">
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, X, Box, Database, Bot, ChevronRight } from "lucide-react";
+import {
+  MessageSquare,
+  X,
+  Send,
+  FileText,
+  Database,
+  Menu,
+  Plus,
+} from "lucide-react";
+import { mockResources } from "../../data/mockResources";
 
-const DUMMY_RESULTS = [
-  {
-    id: 1,
-    title: "PR review EDB",
-    description:
-      "Standard operating procedure for performing PR reviews on Enterprise Data components.",
-  },
-  {
-    id: 2,
-    title: "EDB core components",
-    description:
-      "Documentation and repository links for the core foundational elements of the Enterprise Database.",
-  },
-];
+/*
+  TODO: [LLM_INTEGRATION] Backend integration expected
+  Suggested backend structure:
+  - Store chats per user.
+  - Each chat: chatId, messages[], createdAt, updatedAt
+  APIs to plan:
+  GET /chats - fetch user chats
+  POST /chat - create new chat
+  GET /chat/:id - get chat history
+  DELETE /chat/:id - (for overflow >20)
+*/
 
-const Home = () => {
+const Chatbot = () => {
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchState, setSearchState] = useState("idle"); // 'idle', 'results', 'no-results'
+  const [isOpen, setIsOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const chatBodyRef = useRef(null);
+
+  const [chats, setChats] = useState(() => {
+    const saved = localStorage.getItem("chatbot_chats");
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed.length > 0) return parsed;
+    }
+    return [
+      {
+        id: Date.now().toString(),
+        title: "New Chat",
+        messages: [
+          {
+            role: "assistant",
+            content:
+              "Hi! I can help you find resources and documents. What are you looking for today?",
+            type: "text",
+            timestamp: Date.now(),
+          },
+        ],
+        lastUpdated: Date.now(),
+      },
+    ];
+  });
+
+  const [activeChatId, setActiveChatId] = useState(chats[0]?.id);
+
+  // Listen for external toggle events
+  useEffect(() => {
+    const handleToggle = () => setIsOpen(true);
+    window.addEventListener("toggle-chatbot", handleToggle);
+    return () => window.removeEventListener("toggle-chatbot", handleToggle);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("chatbot_chats", JSON.stringify(chats));
+  }, [chats]);
+
+  // Scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (chatBodyRef.current) {
+      chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
+    }
+  }, [chats, isSearching]);
+
+  const activeChat = chats.find((c) => c.id === activeChatId) || chats[0];
+
+  const handleNewChat = () => {
+    const newChat = {
+      id: Date.now().toString(),
+      title: "New Chat",
+      messages: [
+        {
+          role: "assistant",
+          content:
+            "Hi! I can help you find resources and documents. What are you looking for today?",
+          type: "text",
+          timestamp: Date.now(),
+        },
+      ],
+      lastUpdated: Date.now(),
+    };
+    setChats((prev) => [newChat, ...prev].slice(0, 20)); // FIFO keep top 20
+    setActiveChatId(newChat.id);
+    if (window.innerWidth < 768) setIsSidebarOpen(false);
+  };
 
   const handleSearch = () => {
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) {
-      setSearchState("idle");
-      return;
-    }
+    const q = query.trim();
+    if (!q) return;
 
-    // Dummy matching logic
-    if (
-      q.includes("pr") ||
-      q.includes("review") ||
-      q.includes("edb") ||
-      q.includes("component")
-    ) {
-      setSearchState("results");
-    } else {
-      setSearchState("no-results");
-    }
+    setQuery("");
+
+    const userMsg = { role: "user", content: q, timestamp: Date.now() };
+    setChats((prev) =>
+      prev.map((c) => {
+        if (c.id === activeChatId) {
+          return {
+            ...c,
+            messages: [...c.messages, userMsg],
+            lastUpdated: Date.now(),
+          };
+        }
+        return c;
+      }),
+    );
+
+    setIsSearching(true);
+
+    // Simulate API Call delay
+    setTimeout(() => {
+      const lowerQuery = q.toLowerCase();
+      const filtered = mockResources.filter(
+        (resource) =>
+          resource.title.toLowerCase().includes(lowerQuery) ||
+          resource.type.toLowerCase().includes(lowerQuery),
+      );
+
+      const newMessage =
+        filtered.length > 0
+          ? {
+              role: "assistant",
+              type: "results",
+              content: "I found these resources:",
+              data: filtered,
+              timestamp: Date.now(),
+            }
+          : {
+              role: "assistant",
+              type: "fallback",
+              content: `I couldn't find an exact match for your query.`,
+              timestamp: Date.now(),
+            };
+
+      setChats((prev) => {
+        let updated = prev.map((c) => {
+          if (c.id === activeChatId) {
+            return {
+              ...c,
+              title: c.title === "New Chat" ? q.slice(0, 20) : c.title,
+              messages: [...c.messages, newMessage],
+              lastUpdated: Date.now(),
+            };
+          }
+          return c;
+        });
+
+        updated.sort((a, b) => b.lastUpdated - a.lastUpdated);
+        if (updated.length > 20) {
+          updated = updated.slice(0, 20); // FIFO automatically remove oldest
+        }
+        return updated;
+      });
+
+      setIsSearching(false);
+    }, 600);
   };
 
   const handleKeyDown = (e) => {
@@ -680,193 +268,276 @@ const Home = () => {
     }
   };
 
-  const openChatbot = () => {
-    // Custom event to trigger chatbot from anywhere
-    window.dispatchEvent(new Event("toggle-chatbot"));
+  const handleNavigateToIngestion = (fallbackQuery) => {
+    setIsOpen(false);
+    navigate("/data-ingestion", {
+      state: {
+        prefillDataName: fallbackQuery || "New Data Asset",
+        prefillDataDescription: fallbackQuery
+          ? `Generated from search query: ${fallbackQuery}`
+          : "",
+      },
+    });
   };
 
-  const renderActionButtons = (compact = false) => (
-    <div
-      className={`flex gap-4 ${compact ? "justify-center z-10 relative -mb-4" : "justify-center w-full"}`}
-    >
-      <button
-        onClick={() => navigate("/data-ingestion")}
-        className="flex items-center gap-2 bg-white border border-gray-200 shadow-sm hover:shadow-md hover:border-[#d52b1e] text-gray-800 px-5 py-3 rounded-lg font-medium transition-all group"
-      >
-        <Database
-          size={18}
-          className="text-[#d52b1e] group-hover:scale-110 transition-transform"
-        />
-        Start data ingestion
-      </button>
-      <button
-        onClick={openChatbot}
-        className="flex items-center gap-2 bg-white border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-500 text-gray-800 px-5 py-3 rounded-lg font-medium transition-all group"
-      >
-        <Bot
-          size={18}
-          className="text-blue-500 group-hover:scale-110 transition-transform"
-        />
-        Can't find it? Try AI search
-      </button>
-    </div>
-  );
-
   return (
-    <div className="flex flex-col min-h-full bg-white">
-      {/* Hero Section */}
-      <div className="bg-[#d52b1e] w-full px-8 py-12 flex flex-col items-center justify-center relative">
-        <div className="w-full max-w-5xl z-10">
-          <h1 className="text-white text-5xl font-bold mb-4 tracking-tight">
-            Welcome to <span className="font-extrabold">Enterprise Data</span>
-          </h1>
-          <p className="text-white text-lg font-medium mb-10 tracking-wide opacity-90">
-            A Catalogue of technical products, to assist you in achieving your
-            goals.
-          </p>
-
-          {/* Search Bar Container */}
-          <div className="flex gap-4 w-full">
-            <div className="relative flex-1 flex items-center">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Start browsing our Marketplace for products..."
-                className="w-full bg-white text-gray-800 rounded-md py-4 pl-6 pr-12 text-lg focus:outline-none focus:ring-2 focus:ring-white/50 shadow-lg"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => {
-                    setSearchQuery("");
-                    setSearchState("idle");
-                  }}
-                  className="absolute right-14 text-gray-400 hover:text-gray-600 p-2"
-                >
-                  <X size={20} />
-                </button>
-              )}
-              <button
-                onClick={handleSearch}
-                className="absolute right-2 bg-white text-gray-500 hover:text-gray-800 p-2 rounded-md transition-colors"
+    <>
+      {/* Chat Window */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            transition={{ duration: 0.2 }}
+            className="fixed bottom-24 right-6 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col z-50"
+            style={{ height: "520px" }}
+          >
+            <div className="relative flex flex-col h-full w-full">
+              {/* Sidebar Overlay */}
+              <div
+                className={`absolute top-0 left-0 h-full w-64 bg-gray-50 border-r border-gray-200 z-20 transform transition-transform duration-300 flex flex-col ${isSidebarOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"}`}
               >
-                <Search size={24} />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Actions Section */}
-      <div className="w-full bg-gray-50 flex-1 py-12 px-8 flex justify-center relative">
-        <div className="w-full max-w-5xl flex flex-col gap-6">
-          <AnimatePresence mode="wait">
-            {searchState === "idle" && (
-              <motion.div
-                key="idle"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
-              >
-                {/* Action Card 1 */}
-                <button className="bg-white border border-gray-200 rounded-lg p-6 flex flex-col items-center justify-center text-center gap-4 hover:shadow-md transition-all group">
-                  <Box
-                    size={32}
-                    className="text-[#d52b1e] group-hover:scale-110 transition-transform"
-                  />
-                  <span className="font-medium text-gray-800 text-sm">
-                    Your Favourites
-                  </span>
-                </button>
-              </motion.div>
-            )}
-
-            {searchState === "no-results" && (
-              <motion.div
-                key="no-results"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="flex flex-col items-center justify-center py-8 gap-8"
-              >
-                <div className="text-center">
-                  <h3 className="text-xl font-semibold text-gray-800">
-                    No matching products found
-                  </h3>
-                  <p className="text-gray-500 mt-2">
-                    Try adjusting your search terms or explore these options.
-                  </p>
-                </div>
-                {renderActionButtons()}
-              </motion.div>
-            )}
-
-            {searchState === "results" && (
-              <motion.div
-                key="results"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="flex flex-col gap-6"
-              >
-                {/* Unsatisfied state actions - subtle and compact */}
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.3 }}
-                >
-                  {renderActionButtons(true)}
-                </motion.div>
-
-                <h3 className="text-lg font-semibold text-gray-800 pt-2 border-b border-gray-200 pb-2">
-                  Search Results
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {DUMMY_RESULTS.map((result, i) => (
-                    <motion.div
-                      key={result.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.1 }}
-                      whileHover={{ y: -4 }}
-                      className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm hover:shadow-lg transition-all cursor-pointer group relative overflow-hidden flex flex-col"
+                <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-white min-h-[60px]">
+                  <h3 className="font-semibold text-gray-800">Chat History</h3>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={handleNewChat}
+                      className="p-1.5 bg-gray-100 hover:bg-gray-200 rounded-md text-gray-700 transition-colors"
+                      title="New Chat"
                     >
-                      {/* Animated left accent border */}
-                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#d52b1e] scale-y-0 group-hover:scale-y-100 transition-transform origin-top duration-300"></div>
-
-                      <div className="flex justify-between items-start mb-2">
-                        <h4 className="text-lg font-bold text-[#d52b1e] group-hover:text-red-700 transition-colors">
-                          {result.title}
-                        </h4>
-                        <ChevronRight
-                          size={18}
-                          className="text-gray-400 group-hover:text-[#d52b1e] group-hover:translate-x-1 transition-all"
-                        />
-                      </div>
-                      <p className="text-gray-600 text-sm line-clamp-2 mt-1">
-                        {result.description}
-                      </p>
-                    </motion.div>
+                      <Plus size={16} />
+                    </button>
+                    <button
+                      onClick={() => setIsSidebarOpen(false)}
+                      className="p-1.5 bg-gray-100 hover:bg-gray-200 rounded-md text-gray-700 transition-colors md:hidden"
+                      title="Close Sidebar"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                </div>
+                <div className="flex-1 overflow-y-auto p-2 space-y-1">
+                  {chats.map((chat) => (
+                    <button
+                      key={chat.id}
+                      onClick={() => {
+                        setActiveChatId(chat.id);
+                        setIsSidebarOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-2.5 rounded-lg text-sm truncate transition-colors ${chat.id === activeChatId ? "bg-red-50 text-[#d52b1e] font-medium" : "hover:bg-gray-100 text-gray-700"}`}
+                    >
+                      {chat.title}
+                    </button>
                   ))}
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
+                <div className="p-3 bg-white text-[10px] text-gray-400 border-t border-gray-200">
+                  {/* <p className="font-semibold mb-1">Backend Planned:</p>
+                  <p>GET /chats, POST /chat, GET /chat/:id, DELETE /chat/:id</p> */}
+                  <p>Chat History</p>
+                </div>
+              </div>
 
-      {/* Simple Footer */}
-      <footer className="bg-white border-t border-gray-200 py-6 px-8 text-center text-sm text-gray-500 mt-auto">
-        &copy; {new Date().getFullYear()} Eli Lilly and Company. All rights
-        reserved.
-      </footer>
+              {/* Overlay backdrop when sidebar is open */}
+              {isSidebarOpen && (
+                <div
+                  className="absolute inset-0 bg-black/10 z-10"
+                  onClick={() => setIsSidebarOpen(false)}
+                />
+              )}
+
+              {/* Main Content Area */}
+              <div className="flex-1 flex flex-col h-full z-0">
+                {/* Header */}
+                <div className="bg-[#d52b1e] p-4 text-white flex justify-between items-center min-h-[60px]">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                      className="text-white hover:bg-white/20 p-1 rounded-md transition-colors mr-1"
+                    >
+                      <Menu size={20} />
+                    </button>
+                    <MessageSquare size={20} />
+                    <h3 className="font-semibold">EDB Assistant</h3>
+                  </div>
+                  <button
+                    onClick={() => setIsOpen(false)}
+                    className="text-white hover:bg-white/20 p-1 rounded-md transition-colors"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                {/* Chat Body */}
+                <div
+                  ref={chatBodyRef}
+                  className="flex-1 overflow-y-auto p-4 bg-gray-50 flex flex-col gap-5"
+                >
+                  {activeChat?.messages.map((msg, idx) => (
+                    <div
+                      key={idx}
+                      className={`flex gap-2 ${msg.role === "user" ? "justify-end" : ""}`}
+                    >
+                      {msg.role === "assistant" && (
+                        <div className="w-8 h-8 rounded-full bg-[#d52b1e] flex items-center justify-center text-white flex-shrink-0 mt-1">
+                          <MessageSquare size={16} />
+                        </div>
+                      )}
+                      {msg.role === "user" ? (
+                        <div className="bg-[#d52b1e] p-3 rounded-2xl rounded-tr-sm shadow-sm text-sm text-white max-w-[80%] break-words">
+                          {msg.content}
+                        </div>
+                      ) : (
+                        <div className="bg-white p-3 rounded-2xl rounded-tl-sm border border-gray-100 shadow-sm w-full">
+                          {msg.type === "text" && (
+                            <div className="text-sm text-gray-700">
+                              {msg.content}
+                            </div>
+                          )}
+                          {msg.type === "results" && (
+                            <>
+                              <p className="text-sm text-gray-700 mb-2 font-medium">
+                                {msg.content}
+                              </p>
+                              <div className="space-y-2">
+                                {msg.data.map((res) => (
+                                  <a
+                                    key={res.id}
+                                    href={res.link}
+                                    className="flex items-start gap-2 p-2 rounded-md hover:bg-gray-50 border border-gray-100 transition-colors"
+                                  >
+                                    <FileText
+                                      size={16}
+                                      className="text-[#d52b1e] mt-0.5 flex-shrink-0"
+                                    />
+                                    <div>
+                                      <p className="text-sm font-medium text-gray-800 leading-tight">
+                                        {res.title}
+                                      </p>
+                                      <p className="text-xs text-gray-500 mt-1">
+                                        {res.type}
+                                      </p>
+                                    </div>
+                                  </a>
+                                ))}
+                              </div>
+                            </>
+                          )}
+                          {msg.type === "fallback" && (
+                            <>
+                              <p className="text-sm text-gray-700 mb-3">
+                                {msg.content} Based on your input, the{" "}
+                                <strong>File Ingestion Core Component</strong>{" "}
+                                seems most relevant.
+                              </p>
+                              <p className="text-sm text-gray-700 mb-4">
+                                Let me know if you'd like to proceed. I can
+                                redirect you to Data Ingestion to register this.
+                              </p>
+
+                              {/* CTA Button */}
+                              <button
+                                onClick={() =>
+                                  handleNavigateToIngestion(
+                                    activeChat.messages[idx - 1]?.content,
+                                  )
+                                }
+                                className="w-full flex items-center justify-center gap-2 bg-[#d52b1e] hover:bg-red-700 text-white py-2 px-4 rounded-md font-medium transition-colors text-sm"
+                              >
+                                <Database size={16} />
+                                Start Data Ingestion
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+
+                  {/* Loading Indicator */}
+                  {isSearching && (
+                    <div className="flex gap-2">
+                      <div className="w-8 h-8 rounded-full bg-[#d52b1e] flex items-center justify-center text-white flex-shrink-0 mt-1">
+                        <MessageSquare size={16} />
+                      </div>
+                      <div className="bg-white p-3 rounded-2xl rounded-tl-sm border border-gray-100 shadow-sm text-sm text-gray-500 italic flex gap-1">
+                        <span className="animate-bounce">.</span>
+                        <span className="animate-bounce delay-100">.</span>
+                        <span className="animate-bounce delay-200">.</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Input Area */}
+                <div className="p-3 bg-white border-t border-gray-200">
+                  <div className="relative flex items-center">
+                    <input
+                      type="text"
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder="Ask or search resources..."
+                      className="w-full pl-4 pr-10 py-3 rounded-full border border-gray-200 focus:outline-none focus:border-[#d52b1e] focus:ring-1 focus:ring-[#d52b1e] text-sm transition-all"
+                    />
+                    <button
+                      className="absolute right-2 p-2 bg-[#d52b1e] text-white rounded-full hover:bg-red-700 transition-colors"
+                      onClick={handleSearch}
+                    >
+                      <Send size={14} />
+                    </button>
+                  </div>
+                  <div className="text-center mt-2">
+                    <span className="text-[10px] text-gray-400">
+                      Powered by AI Search
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Floating Action Button */}
+      <AnimatePresence>
+        {!isOpen && (
+          <motion.button
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setIsOpen(true)}
+            className="fixed bottom-6 right-6 w-14 h-14 bg-[#d52b1e] rounded-full flex items-center justify-center text-white shadow-lg border-2 border-white/20 z-50 group"
+          >
+            <MessageSquare size={24} className="group-hover:animate-pulse" />
+          </motion.button>
+        )}
+      </AnimatePresence>
+    </>
+  );
+};
+
+export default Chatbot;
+</file>
+
+<file path="src/components/layout/MainLayout.jsx">
+import React from 'react';
+import Sidebar from './Sidebar';
+
+const MainLayout = ({ children }) => {
+  return (
+    <div className="flex h-screen w-full overflow-hidden bg-white">
+      <Sidebar />
+      <main className="flex-1 overflow-y-auto">
+        {children}
+      </main>
     </div>
   );
 };
 
-export default Home;
+export default MainLayout;
 </file>
 
 <file path="src/components/layout/Sidebar.jsx">
@@ -1134,6 +805,347 @@ const Sidebar = () => {
 export default Sidebar;
 </file>
 
+<file path="src/components/ui/Toast.jsx">
+import React, { useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { CheckCircle2, XCircle, X } from 'lucide-react';
+
+const Toast = ({ message, type = 'success', onClose, duration = 3000 }) => {
+  useEffect(() => {
+    if (duration > 0) {
+      const timer = setTimeout(() => {
+        onClose();
+      }, duration);
+      return () => clearTimeout(timer);
+    }
+  }, [duration, onClose]);
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0, y: 50, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 20, scale: 0.95 }}
+        className="fixed bottom-6 right-6 z-50 min-w-[300px] bg-white border border-gray-200 rounded-lg shadow-xl p-4 flex items-start gap-3"
+      >
+        {type === 'success' ? (
+          <CheckCircle2 className="text-green-500 flex-shrink-0 mt-0.5" size={20} />
+        ) : (
+          <XCircle className="text-red-500 flex-shrink-0 mt-0.5" size={20} />
+        )}
+        <div className="flex-1">
+          <p className="text-sm font-medium text-gray-900">{message}</p>
+        </div>
+        <button
+          onClick={onClose}
+          className="text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <X size={16} />
+        </button>
+      </motion.div>
+    </AnimatePresence>
+  );
+};
+
+export default Toast;
+</file>
+
+<file path="src/data/mockResources.js">
+export const mockResources = [
+  { id: 1, title: "Enterprise Data Strategy 2026", type: "Document", link: "#" },
+  { id: 2, title: "Data Catalog User Guide", type: "PDF", link: "#" },
+  { id: 3, title: "API Reference for Analytics", type: "Documentation", link: "#" },
+  { id: 4, title: "Metadata Manager Onboarding", type: "Video", link: "#" },
+];
+</file>
+
+<file path="src/main.jsx">
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import './index.css'
+import App from './App.jsx'
+
+createRoot(document.getElementById('root')).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+)
+</file>
+
+<file path="src/pages/DemoPage.jsx">
+import React from 'react';
+import { Sparkles } from 'lucide-react';
+
+const DemoPage = () => {
+  return (
+    <div className="flex flex-col min-h-full bg-gray-50">
+      <div className="bg-white border-b border-gray-200 px-8 py-6">
+        <h1 className="text-3xl font-bold text-gray-800">Demo Page</h1>
+        <p className="text-gray-500 mt-2">This is a proof-of-concept page to demonstrate routing and layout.</p>
+      </div>
+      
+      <div className="p-8 flex-1 flex flex-col items-center justify-center">
+        <div className="bg-white p-12 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center max-w-md">
+          <div className="w-16 h-16 bg-red-50 text-[#d52b1e] rounded-full flex items-center justify-center mb-6">
+            <Sparkles size={32} />
+          </div>
+          <h2 className="text-xl font-bold text-gray-800 mb-2">You found the demo page!</h2>
+          <p className="text-gray-500 mb-6">
+            This area could be populated with forms, data tables, dashboards, or any other enterprise feature required.
+          </p>
+          <button className="bg-[#d52b1e] hover:bg-red-700 text-white font-medium py-2 px-6 rounded-md transition-colors shadow-sm">
+            Explore Features
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default DemoPage;
+</file>
+
+<file path="src/pages/Home.jsx">
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import { Search, X, Box, Database, Bot, ChevronRight } from "lucide-react";
+
+const DUMMY_RESULTS = [
+  {
+    id: 1,
+    title: "PR review EDB",
+    description:
+      "Standard operating procedure for performing PR reviews on Enterprise Data components.",
+  },
+  {
+    id: 2,
+    title: "EDB core components",
+    description:
+      "Documentation and repository links for the core foundational elements of the Enterprise Database.",
+  },
+];
+
+const Home = () => {
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchState, setSearchState] = useState("idle"); // 'idle', 'results', 'no-results'
+
+  const handleSearch = () => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) {
+      setSearchState("idle");
+      return;
+    }
+
+    // Dummy matching logic
+    if (
+      q.includes("pr") ||
+      q.includes("review") ||
+      q.includes("edb") ||
+      q.includes("component")
+    ) {
+      setSearchState("results");
+    } else {
+      setSearchState("no-results");
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  };
+
+  const openChatbot = () => {
+    // Custom event to trigger chatbot from anywhere
+    window.dispatchEvent(new Event("toggle-chatbot"));
+  };
+
+  const renderActionButtons = (compact = false) => (
+    <div
+      className={`flex gap-4 ${compact ? "justify-center z-10 relative -mb-4" : "justify-center w-full"}`}
+    >
+      <button
+        onClick={() => navigate("/data-ingestion")}
+        className="flex items-center gap-2 bg-white border border-gray-200 shadow-sm hover:shadow-md hover:border-[#d52b1e] text-gray-800 px-5 py-3 rounded-lg font-medium transition-all group"
+      >
+        <Database
+          size={18}
+          className="text-[#d52b1e] group-hover:scale-110 transition-transform"
+        />
+        Start data ingestion
+      </button>
+      <button
+        onClick={openChatbot}
+        className="flex items-center gap-2 bg-white border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-500 text-gray-800 px-5 py-3 rounded-lg font-medium transition-all group"
+      >
+        <Bot
+          size={18}
+          className="text-blue-500 group-hover:scale-110 transition-transform"
+        />
+        Can't find it? Try AI search
+      </button>
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col min-h-full bg-white">
+      {/* Hero Section */}
+      <div className="bg-[#d52b1e] w-full px-8 py-12 flex flex-col items-center justify-center relative">
+        <div className="w-full max-w-5xl z-10">
+          <h1 className="text-white text-5xl font-bold mb-4 tracking-tight">
+            Welcome to <span className="font-extrabold">Enterprise Data</span>
+          </h1>
+          <p className="text-white text-lg font-medium mb-10 tracking-wide opacity-90">
+            A Catalogue of technical products, to assist you in achieving your
+            goals.
+          </p>
+
+          {/* Search Bar Container */}
+          <div className="flex gap-4 w-full">
+            <div className="relative flex-1 flex items-center">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Start browsing our Marketplace for products..."
+                className="w-full bg-white text-gray-800 rounded-md py-4 pl-6 pr-12 text-lg focus:outline-none focus:ring-2 focus:ring-white/50 shadow-lg"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => {
+                    setSearchQuery("");
+                    setSearchState("idle");
+                  }}
+                  className="absolute right-14 text-gray-400 hover:text-gray-600 p-2"
+                >
+                  <X size={20} />
+                </button>
+              )}
+              <button
+                onClick={handleSearch}
+                className="absolute right-2 bg-white text-gray-500 hover:text-gray-800 p-2 rounded-md transition-colors"
+              >
+                <Search size={24} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Actions Section */}
+      <div className="w-full bg-gray-50 flex-1 py-12 px-8 flex justify-center relative">
+        <div className="w-full max-w-5xl flex flex-col gap-6">
+          <AnimatePresence mode="wait">
+            {searchState === "idle" && (
+              <motion.div
+                key="idle"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+              >
+                {/* Action Card 1 */}
+                <button className="bg-white border border-gray-200 rounded-lg p-6 flex flex-col items-center justify-center text-center gap-4 hover:shadow-md transition-all group">
+                  <Box
+                    size={32}
+                    className="text-[#d52b1e] group-hover:scale-110 transition-transform"
+                  />
+                  <span className="font-medium text-gray-800 text-sm">
+                    Your Favourites
+                  </span>
+                </button>
+              </motion.div>
+            )}
+
+            {searchState === "no-results" && (
+              <motion.div
+                key="no-results"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="flex flex-col items-center justify-center py-8 gap-8"
+              >
+                <div className="text-center">
+                  <h3 className="text-xl font-semibold text-gray-800">
+                    No matching products found
+                  </h3>
+                  <p className="text-gray-500 mt-2">
+                    Try adjusting your search terms or explore these options.
+                  </p>
+                </div>
+                {renderActionButtons()}
+              </motion.div>
+            )}
+
+            {searchState === "results" && (
+              <motion.div
+                key="results"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="flex flex-col gap-6"
+              >
+                {/* Unsatisfied state actions - subtle and compact */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  {renderActionButtons(true)}
+                </motion.div>
+
+                <h3 className="text-lg font-semibold text-gray-800 pt-2 border-b border-gray-200 pb-2">
+                  Search Results
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {DUMMY_RESULTS.map((result, i) => (
+                    <motion.div
+                      key={result.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.1 }}
+                      whileHover={{ y: -4 }}
+                      className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm hover:shadow-lg transition-all cursor-pointer group relative overflow-hidden flex flex-col"
+                    >
+                      {/* Animated left accent border */}
+                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#d52b1e] scale-y-0 group-hover:scale-y-100 transition-transform origin-top duration-300"></div>
+
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="text-lg font-bold text-[#d52b1e] group-hover:text-red-700 transition-colors">
+                          {result.title}
+                        </h4>
+                        <ChevronRight
+                          size={18}
+                          className="text-gray-400 group-hover:text-[#d52b1e] group-hover:translate-x-1 transition-all"
+                        />
+                      </div>
+                      <p className="text-gray-600 text-sm line-clamp-2 mt-1">
+                        {result.description}
+                      </p>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+
+      {/* Simple Footer */}
+      <footer className="bg-white border-t border-gray-200 py-6 px-8 text-center text-sm text-gray-500 mt-auto">
+        &copy; {new Date().getFullYear()} Eli Lilly and Company. All rights
+        reserved.
+      </footer>
+    </div>
+  );
+};
+
+export default Home;
+</file>
+
 <file path="src/pages/MyIngestionStatus.jsx">
 import React, { useState, useEffect } from "react";
 import {
@@ -1148,7 +1160,6 @@ import {
   Search,
   Store,
   XCircle,
-  MessageSquare,
   FileCheck,
   UserCheck,
   ShieldCheck,
@@ -1269,7 +1280,7 @@ const ProgressTracker = ({ item }) => {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="flex items-center gap-1.5">
-                        <FileCheck size={12} /> EA
+                        <FileCheck size={12} /> Enterprise Agreement
                       </span>
                       {approvalStatus.enterprise_agreement ? (
                         <CheckCircle2 size={12} className="text-green-400" />
@@ -1402,11 +1413,6 @@ const TimelineView = ({ item }) => {
                     {/* Tiny triangle for speech bubble effect */}
                     <div className="absolute -top-2 left-4 border-4 border-transparent border-b-gray-100"></div>
                     <div className="absolute -top-[7px] left-4 border-4 border-transparent border-b-gray-50"></div>
-
-                    <p className="font-semibold text-gray-800 mb-1 flex items-center gap-1.5 text-xs uppercase tracking-wider">
-                      <MessageSquare size={12} className="text-gray-500" />{" "}
-                      Updates
-                    </p>
                     <p className="text-gray-600">
                       {item.comments?.[stage.id] ||
                         "No updates available for this stage yet."}
@@ -1437,6 +1443,7 @@ const MyIngestionStatus = () => {
           dataDescription: "Quarterly sales figures and analysis for Q3 2025.",
           dataFormat: "Excel",
           sourceLink: "https://internal.lilly.com/data/sales-q3",
+          businessArea: "BU",
           currentStage: "approval",
           date: "2026-04-26",
           publishToMarketplace: "Yes",
@@ -1457,6 +1464,7 @@ const MyIngestionStatus = () => {
             "Anonymized patient demographic data for recent trials.",
           dataFormat: "Parquet",
           sourceLink: "s3://lilly-clinical-data/demographics/",
+          businessArea: "LRL",
           currentStage: "deploy",
           date: "2026-04-20",
           publishToMarketplace: "No",
@@ -1479,6 +1487,7 @@ const MyIngestionStatus = () => {
           dataDescription: "Old marketing campaigns from 2022.",
           dataFormat: "JSON",
           sourceLink: "s3://lilly-marketing/2022/",
+          businessArea: "GS",
           currentStage: "cancelled",
           date: "2026-04-28",
           publishToMarketplace: "No",
@@ -1720,6 +1729,12 @@ const MyIngestionStatus = () => {
                                 <div className="grid grid-cols-2 gap-4 text-xs text-gray-600">
                                   <p className="flex justify-between border-b border-gray-50 pb-1">
                                     <span className="font-medium">
+                                      Business Area:
+                                    </span>
+                                    <span>{item.businessArea || "N/A"}</span>
+                                  </p>
+                                  <p className="flex justify-between border-b border-gray-50 pb-1">
+                                    <span className="font-medium">
                                       L1 Business:
                                     </span>
                                     <span>
@@ -1828,6 +1843,7 @@ const StartDataIngestion = () => {
     dataDescription: location.state?.prefillDataDescription || "",
     dataFormat: "",
     sourceLink: "",
+    businessArea: "",
     // Stage 2
     appName: "",
     costCenter: "",
@@ -1864,6 +1880,8 @@ const StartDataIngestion = () => {
     if (!formData.dataFormat) newErrors.dataFormat = "Data Format is required";
     if (!formData.sourceLink.trim())
       newErrors.sourceLink = "Source Link is required";
+    if (!formData.businessArea)
+      newErrors.businessArea = "Business Area is required";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -1962,6 +1980,7 @@ const StartDataIngestion = () => {
         dataDescription: "",
         dataFormat: "",
         sourceLink: "",
+        businessArea: "",
         appName: "",
         costCenter: "",
         costCenterApprover: "",
@@ -2137,7 +2156,7 @@ const StartDataIngestion = () => {
                   className={`block w-full pl-10 pr-3 py-2.5 border ${
                     errors.dataName ? "border-red-500" : "border-gray-300"
                   } rounded-md shadow-sm focus:ring-[#d52b1e] focus:border-[#d52b1e] sm:text-sm transition-colors`}
-                  placeholder="e.g. Sales Q3 Report"
+                  placeholder="e.g. IQVA Commercials"
                 />
               </div>
               {errors.dataName && (
@@ -2158,7 +2177,7 @@ const StartDataIngestion = () => {
                 className={`block w-full p-3 border ${
                   errors.dataDescription ? "border-red-500" : "border-gray-300"
                 } rounded-md shadow-sm focus:ring-[#d52b1e] focus:border-[#d52b1e] sm:text-sm transition-colors`}
-                placeholder="Provide a detailed description of the dataset contents..."
+                placeholder="Provide a detailed description about the data and how this data is going to be used"
               />
               {errors.dataDescription && (
                 <p className="mt-1 text-xs text-red-500">
@@ -2181,7 +2200,7 @@ const StartDataIngestion = () => {
                 <div
                   className={`block w-full pl-10 pr-10 py-1.5 border ${
                     errors.dataFormat ? "border-red-500" : "border-gray-300"
-                  } bg-white rounded-md shadow-sm sm:text-sm min-h-[32px] flex items-center`}
+                  } bg-white rounded-md shadow-sm sm:text-sm min-h-[24px] flex items-center`}
                 >
                   {formData.dataFormat ? (
                     <span className="text-gray-900">{formData.dataFormat}</span>
@@ -2234,7 +2253,7 @@ const StartDataIngestion = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Data resides at / Source link{" "}
+                Data resides at ? (Source File System/DB/S3 Bucket)
                 <span className="text-red-500">*</span>
               </label>
               <div className="relative">
@@ -2255,6 +2274,34 @@ const StartDataIngestion = () => {
               </div>
               {errors.sourceLink && (
                 <p className="mt-1 text-xs text-red-500">{errors.sourceLink}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Business Area <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={formData.businessArea}
+                onChange={(e) =>
+                  handleInputChange("businessArea", e.target.value)
+                }
+                className={`block w-full px-3 py-2.5 border ${
+                  errors.businessArea ? "border-red-500" : "border-gray-300"
+                } rounded-md shadow-sm focus:ring-[#d52b1e] focus:border-[#d52b1e] sm:text-sm transition-colors bg-white`}
+              >
+                <option value="">Select...</option>
+                <option value="BU">BU</option>
+                <option value="LRL">LRL</option>
+                <option value="GS">GS</option>
+                <option value="GIS">GIS</option>
+                <option value="MQ">MQ</option>
+                <option value="AADS">AADS</option>
+              </select>
+              {errors.businessArea && (
+                <p className="mt-1 text-xs text-red-500">
+                  {errors.businessArea}
+                </p>
               )}
             </div>
 
@@ -2312,7 +2359,8 @@ const StartDataIngestion = () => {
                 )}
                 <div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4 py-3 border-b border-gray-100 last:border-0">
                   <label className="w-full sm:w-1/3 text-sm font-medium text-gray-700 mt-2">
-                    Level 1 Business Area <span className="text-red-500">*</span>
+                    Level 1 Business Area{" "}
+                    <span className="text-red-500">*</span>
                   </label>
                   <div className="w-full sm:w-2/3 space-y-2">
                     <select
@@ -2320,37 +2368,55 @@ const StartDataIngestion = () => {
                       onChange={(e) => {
                         setLevel1BusinessAreaOption(e.target.value);
                         if (e.target.value !== "Other") {
-                          handleInputChange("level1BusinessArea", e.target.value);
+                          handleInputChange(
+                            "level1BusinessArea",
+                            e.target.value,
+                          );
                         } else {
                           handleInputChange("level1BusinessArea", "");
                         }
                       }}
                       className={`block w-full px-3 py-2 border ${
-                        errors.level1BusinessArea && !level1BusinessAreaOption ? "border-red-500" : "border-gray-300"
+                        errors.level1BusinessArea && !level1BusinessAreaOption
+                          ? "border-red-500"
+                          : "border-gray-300"
                       } rounded-md shadow-sm focus:ring-[#d52b1e] focus:border-[#d52b1e] sm:text-sm transition-colors bg-white`}
                     >
                       <option value="">Select...</option>
                       <option value="MD IDS">MD IDS</option>
-                      <option value="Business Units IDS">Business Units IDS</option>
+                      <option value="Business Units IDS">
+                        Business Units IDS
+                      </option>
                       <option value="MQ IDS">MQ IDS</option>
                       <option value="AADS">AADS</option>
-                      <option value="Global Info services">Global Info services</option>
+                      <option value="Global Info services">
+                        Global Info services
+                      </option>
                       <option value="Other">Other</option>
                     </select>
-                    
+
                     {level1BusinessAreaOption === "Other" && (
                       <input
                         type="text"
                         value={formData.level1BusinessArea}
-                        onChange={(e) => handleInputChange("level1BusinessArea", e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange(
+                            "level1BusinessArea",
+                            e.target.value,
+                          )
+                        }
                         placeholder="Please specify"
                         className={`block w-full px-3 py-2 border ${
-                          errors.level1BusinessArea ? "border-red-500" : "border-gray-300"
+                          errors.level1BusinessArea
+                            ? "border-red-500"
+                            : "border-gray-300"
                         } rounded-md shadow-sm focus:ring-[#d52b1e] focus:border-[#d52b1e] sm:text-sm transition-colors`}
                       />
                     )}
                     {errors.level1BusinessArea && (
-                      <p className="mt-1 text-xs text-red-500">{errors.level1BusinessArea}</p>
+                      <p className="mt-1 text-xs text-red-500">
+                        {errors.level1BusinessArea}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -2366,10 +2432,13 @@ const StartDataIngestion = () => {
                     { value: "green", label: "Green" },
                     { value: "yellow", label: "Yellow" },
                     { value: "orange", label: "Orange" },
-                    { value: "red", label: "Red" }
-                  ]
+                    { value: "red", label: "Red" },
+                  ],
                 )}
-                {renderSelectField("Require Hipaa compliance", "hipaa", ["Yes", "No"])}
+                {renderSelectField("Require Hipaa compliance", "hipaa", [
+                  "Yes",
+                  "No",
+                ])}
                 {renderStage2Field(
                   "Source Git Repo",
                   "sourceGitRepo",
@@ -2490,6 +2559,14 @@ const StartDataIngestion = () => {
                     <span className="font-medium text-gray-500">Format:</span>{" "}
                     <span className="text-gray-900 block mt-1">
                       {formData.dataFormat}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-500">
+                      Business Area:
+                    </span>{" "}
+                    <span className="text-gray-900 block mt-1">
+                      {formData.businessArea}
                     </span>
                   </div>
                   <div className="col-span-1 md:col-span-2">
@@ -2615,6 +2692,195 @@ const StartDataIngestion = () => {
 };
 
 export default StartDataIngestion;
+</file>
+
+<file path="src/pages/Tickets.jsx">
+import React, { useState } from 'react';
+import { Ticket, Search, Filter, Plus, Clock, CheckCircle2, AlertCircle, MoreHorizontal } from 'lucide-react';
+
+const DUMMY_TICKETS = [
+  {
+    id: 'TKT-1042',
+    title: 'Access Request: Sales Q3 Data',
+    type: 'Access',
+    status: 'Open',
+    priority: 'High',
+    assignee: 'Data Gov Team',
+    date: '2026-04-28',
+  },
+  {
+    id: 'TKT-1041',
+    title: 'Ingestion Pipeline Failure: Marketing Assets',
+    type: 'Bug',
+    status: 'In Progress',
+    priority: 'Critical',
+    assignee: 'Data Eng Team',
+    date: '2026-04-27',
+  },
+  {
+    id: 'TKT-1038',
+    title: 'Marketplace Publish Review',
+    type: 'Review',
+    status: 'Resolved',
+    priority: 'Medium',
+    assignee: 'Compliance',
+    date: '2026-04-25',
+  },
+  {
+    id: 'TKT-1035',
+    title: 'Update Data Classification for Patient Demographics',
+    type: 'Request',
+    status: 'Closed',
+    priority: 'Low',
+    assignee: 'Security',
+    date: '2026-04-20',
+  }
+];
+
+const Tickets = () => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
+
+  const filteredTickets = DUMMY_TICKETS.filter(ticket => {
+    const matchesSearch = ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) || ticket.id.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'All' || ticket.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'Open': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'In Progress': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'Resolved': return 'bg-green-100 text-green-800 border-green-200';
+      case 'Closed': return 'bg-gray-100 text-gray-800 border-gray-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getPriorityIcon = (priority) => {
+    switch (priority) {
+      case 'Critical': return <AlertCircle size={14} className="text-red-500" />;
+      case 'High': return <AlertCircle size={14} className="text-orange-500" />;
+      case 'Medium': return <Clock size={14} className="text-yellow-500" />;
+      case 'Low': return <CheckCircle2 size={14} className="text-green-500" />;
+      default: return null;
+    }
+  };
+
+  return (
+    <div className="min-h-full bg-gray-50 flex flex-col py-10 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto w-full">
+        {/* Header Section */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
+              <Ticket className="text-[#d52b1e]" size={24} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">My Tickets</h1>
+              <p className="text-gray-500 text-sm">Manage your support and request tickets</p>
+            </div>
+          </div>
+          <button className="flex items-center gap-2 bg-[#d52b1e] hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors shadow-sm">
+            <Plus size={16} />
+            Create Ticket
+          </button>
+        </div>
+
+        {/* Filters & Search */}
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6 flex flex-col sm:flex-row gap-4 justify-between items-center">
+          <div className="relative w-full sm:w-96">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            <input
+              type="text"
+              placeholder="Search by ID or title..."
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#d52b1e] focus:border-transparent outline-none text-sm"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <Filter size={18} className="text-gray-400" />
+            <select
+              className="w-full sm:w-auto border border-gray-300 rounded-md py-2 pl-3 pr-8 focus:ring-2 focus:ring-[#d52b1e] focus:border-transparent outline-none text-sm text-gray-700"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="All">All Statuses</option>
+              <option value="Open">Open</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Resolved">Resolved</option>
+              <option value="Closed">Closed</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Tickets Table */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-200 text-xs uppercase tracking-wider text-gray-500 font-semibold">
+                  <th className="p-4 pl-6">Ticket</th>
+                  <th className="p-4">Type</th>
+                  <th className="p-4">Status</th>
+                  <th className="p-4">Priority</th>
+                  <th className="p-4 hidden md:table-cell">Assignee</th>
+                  <th className="p-4 hidden sm:table-cell">Date</th>
+                  <th className="p-4 text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filteredTickets.map((ticket) => (
+                  <tr key={ticket.id} className="hover:bg-gray-50 transition-colors group">
+                    <td className="p-4 pl-6">
+                      <div className="font-medium text-gray-900 group-hover:text-[#d52b1e] transition-colors cursor-pointer">
+                        {ticket.title}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-0.5">{ticket.id}</div>
+                    </td>
+                    <td className="p-4">
+                      <span className="text-sm text-gray-700">{ticket.type}</span>
+                    </td>
+                    <td className="p-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(ticket.status)}`}>
+                        {ticket.status}
+                      </span>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center gap-1.5 text-sm text-gray-700">
+                        {getPriorityIcon(ticket.priority)}
+                        {ticket.priority}
+                      </div>
+                    </td>
+                    <td className="p-4 hidden md:table-cell text-sm text-gray-600">
+                      {ticket.assignee}
+                    </td>
+                    <td className="p-4 hidden sm:table-cell text-sm text-gray-500">
+                      {ticket.date}
+                    </td>
+                    <td className="p-4 text-center">
+                      <button className="text-gray-400 hover:text-gray-700 transition-colors p-1 rounded-md hover:bg-gray-100">
+                        <MoreHorizontal size={18} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {filteredTickets.length === 0 && (
+            <div className="p-12 text-center text-gray-500">
+              No tickets found matching your criteria.
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Tickets;
 </file>
 
 </files>

@@ -7,6 +7,10 @@ import {
   Type,
   ChevronDown,
   CheckCircle2,
+  Loader2,
+  Copy,
+  ExternalLink,
+  Github
 } from "lucide-react";
 import Toast from "../components/ui/Toast";
 
@@ -58,6 +62,9 @@ const StartDataIngestion = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [formatSearch, setFormatSearch] = useState("");
   const [level1BusinessAreaOption, setLevel1BusinessAreaOption] = useState("");
+  const [isCreatingRepo, setIsCreatingRepo] = useState(false);
+  const [repoStatus, setRepoStatus] = useState(null);
+  const [repoData, setRepoData] = useState(null);
 
   const filteredFormats = FORMAT_OPTIONS.filter((format) =>
     format.toLowerCase().includes(formatSearch.toLowerCase()),
@@ -148,49 +155,65 @@ const StartDataIngestion = () => {
     setCurrentStage(4);
   };
 
-  const handleFinalSubmit = (e) => {
+  const handleFinalSubmit = async (e) => {
     e.preventDefault();
-    // Save to localStorage
-    const existing = JSON.parse(localStorage.getItem("ingestions") || "[]");
-    const newSubmission = {
-      ...formData,
-      id: `ING-${Math.floor(1000 + Math.random() * 9000)}`,
-      date: new Date().toISOString().split("T")[0],
-      currentStage: "approval",
-    };
-    localStorage.setItem(
-      "ingestions",
-      JSON.stringify([...existing, newSubmission]),
-    );
-
-    setShowToast(true);
-    setTimeout(() => {
-      // Reset form
-      setFormData({
-        dataName: "",
-        dataDescription: "",
-        dataFormat: "",
-        sourceLink: "",
-        businessArea: "",
-        appName: "",
-        costCenter: "",
-        costCenterApprover: "",
-        systemOwner: "",
-        systemCustodian: "",
-        primaryItContact: "",
-        level1BusinessArea: "",
-        projectCenter: "",
-        dataClassification: "",
-        hipaa: "",
-        sourceGitRepo: "",
-        approverGroup: "",
-        applicationCi: "",
-        publishToMarketplace: "Yes",
+    setIsCreatingRepo(true);
+    setRepoStatus(null);
+    
+    try {
+      const response = await fetch("http://localhost:8080/api/github/create-repo", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ formData })
       });
-      setLevel1BusinessAreaOption("");
-      setCurrentStage(1);
-      navigate("/my-ingestion");
-    }, 2000);
+      
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Failed to start creation");
+      
+      const { jobId } = data;
+      
+      const pollInterval = setInterval(async () => {
+        try {
+          const statusRes = await fetch(`http://localhost:8080/api/github/status/${jobId}`);
+          const statusData = await statusRes.json();
+          
+          if (statusData.status === 'success') {
+            clearInterval(pollInterval);
+            setIsCreatingRepo(false);
+            setRepoStatus("success");
+            setRepoData(statusData);
+            
+            const existing = JSON.parse(localStorage.getItem("ingestions") || "[]");
+            const newSubmission = {
+              ...formData,
+              id: `ING-${Math.floor(1000 + Math.random() * 9000)}`,
+              date: new Date().toISOString().split("T")[0],
+              currentStage: "approval",
+              repoUrl: statusData.url
+            };
+            localStorage.setItem(
+              "ingestions",
+              JSON.stringify([...existing, newSubmission])
+            );
+          } else if (statusData.status === 'error') {
+            clearInterval(pollInterval);
+            setIsCreatingRepo(false);
+            setRepoStatus("error");
+            setShowToast(true);
+          }
+        } catch (pollErr) {
+          console.error("Polling error", pollErr);
+        }
+      }, 2000);
+      
+    } catch (err) {
+      console.error(err);
+      setIsCreatingRepo(false);
+      setRepoStatus("error");
+      setShowToast(true);
+    }
   };
 
   const handleInputChange = (field, value) => {
@@ -308,10 +331,76 @@ const StartDataIngestion = () => {
     <div className="min-h-full bg-gray-50 flex flex-col items-center py-12 px-4 sm:px-6 lg:px-8">
       {showToast && (
         <Toast
-          message="Data ingestion submitted successfully!"
-          type="success"
+          message={repoStatus === 'error' ? "Error creating repository!" : "Data ingestion submitted successfully!"}
+          type={repoStatus === 'error' ? "error" : "success"}
           onClose={() => setShowToast(false)}
         />
+      )}
+
+      {repoStatus === "success" && repoData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all">
+            <div className="bg-green-500 p-6 text-center">
+              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner">
+                <Github size={32} className="text-green-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-white">Success!</h2>
+              <p className="text-green-50 mt-1">Repository created successfully</p>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <p className="text-gray-600 text-sm text-center">
+                Your new repository is ready. You can now start adding your data and code.
+              </p>
+              
+              <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Repository URL</label>
+                <div className="flex items-center gap-2">
+                  <input 
+                    type="text" 
+                    readOnly 
+                    value={repoData.url} 
+                    className="bg-white border border-gray-300 text-gray-800 text-sm rounded-md block w-full p-2.5 focus:ring-green-500 focus:border-green-500"
+                  />
+                  <button 
+                    onClick={() => navigator.clipboard.writeText(repoData.url)}
+                    className="p-2.5 bg-gray-100 border border-gray-300 rounded-md text-gray-600 hover:bg-gray-200 hover:text-gray-900 transition-colors"
+                    title="Copy to clipboard"
+                  >
+                    <Copy size={18} />
+                  </button>
+                  <a 
+                    href={repoData.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="p-2.5 bg-green-50 border border-green-200 rounded-md text-green-600 hover:bg-green-100 hover:text-green-700 transition-colors"
+                    title="Open in new tab"
+                  >
+                    <ExternalLink size={18} />
+                  </a>
+                </div>
+              </div>
+              
+              <button
+                onClick={() => {
+                  setRepoStatus(null);
+                  setFormData({
+                    dataName: "", dataDescription: "", dataFormat: "", sourceLink: "", businessArea: "",
+                    appName: "", costCenter: "", costCenterApprover: "", systemOwner: "", systemCustodian: "",
+                    primaryItContact: "", level1BusinessArea: "", projectCenter: "", dataClassification: "",
+                    hipaa: "", sourceGitRepo: "", approverGroup: "", applicationCi: "", publishToMarketplace: "Yes",
+                  });
+                  setLevel1BusinessAreaOption("");
+                  setCurrentStage(1);
+                  navigate("/my-ingestion");
+                }}
+                className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 px-4 rounded-lg transition-colors focus:ring-4 focus:ring-green-300"
+              >
+                Continue to Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <div className="w-full max-w-3xl bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden mb-8">
@@ -870,9 +959,17 @@ const StartDataIngestion = () => {
               </button>
               <button
                 type="submit"
-                className="cursor-pointer px-8 py-2 text-sm font-bold text-white bg-[#d52b1e] border border-transparent rounded-md shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#d52b1e] transition-colors"
+                disabled={isCreatingRepo}
+                className="cursor-pointer flex items-center justify-center min-w-[140px] px-8 py-2 text-sm font-bold text-white bg-[#d52b1e] border border-transparent rounded-md shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#d52b1e] transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                Final Submit
+                {isCreatingRepo ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin mr-2" />
+                    Creating Repo...
+                  </>
+                ) : (
+                  "Final Submit"
+                )}
               </button>
             </div>
           </form>
