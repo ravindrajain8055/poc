@@ -58,8 +58,8 @@ const processRepoCreation = async (jobId, repoName, tags, formData) => {
   };
 
   try {
-    // 1. Create Repo
-    let createRes = await fetch('https://api.github.com/user/repos', {
+    // 1. Create Repo in Organization
+    let createRes = await fetch(`https://api.github.com/orgs/${owner}/repos`, {
       method: 'POST',
       headers,
       body: JSON.stringify({
@@ -74,30 +74,12 @@ const processRepoCreation = async (jobId, repoName, tags, formData) => {
     let repoFullName = '';
 
     if (!createRes.ok) {
-       if (repoData.message && repoData.message.includes('organization')) {
-           createRes = await fetch(`https://api.github.com/orgs/${owner}/repos`, {
-              method: 'POST',
-              headers,
-              body: JSON.stringify({
-                name: repoName,
-                description: formData.dataDescription || `Repository for ${formData.dataName}`,
-                private: true,
-                auto_init: true
-              })
-           });
-           repoData = await createRes.json();
-       }
-       
-       if (!createRes.ok) {
-           if (repoData.errors && repoData.errors.some(e => e.message && e.message.includes('already exists'))) {
-               // Repo already exists, let's just proceed with it
-               repoFullName = `${owner}/${repoName}`;
-           } else {
-               throw new Error(repoData.message || 'Failed to create repo');
-           }
-       } else {
-           repoFullName = repoData.full_name || `${owner}/${repoName}`;
-       }
+        if (repoData.errors && repoData.errors.some(e => e.message && e.message.includes('already exists'))) {
+            // Repo already exists, let's just proceed with it
+            repoFullName = `${owner}/${repoName}`;
+        } else {
+            throw new Error(repoData.message || 'Failed to create repo in organization');
+        }
     } else {
         repoFullName = repoData.full_name || `${owner}/${repoName}`;
     }
